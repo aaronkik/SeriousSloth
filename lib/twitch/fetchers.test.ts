@@ -1,4 +1,9 @@
-import { fetchClientCredentials, fetchGlobalEmotes } from './fetchers';
+import { validUsername } from '~/__mocks__/data/twitch/constants';
+import {
+  fetchClientCredentials,
+  fetchGlobalEmotes,
+  fetchUsers,
+} from './fetchers';
 
 describe('fetchClientCredentials', () => {
   it('Payload includes expected values', async () => {
@@ -36,6 +41,26 @@ describe('fetchGlobalEmotes', () => {
       expect(theme_mode).toEqual(
         expect.arrayContaining([expect.stringMatching(/^(light|dark)$/)])
       );
+    });
+  });
+});
+
+describe('fetchUsers', () => {
+  it('Returns users from API', async () => {
+    const { data } = await fetchUsers('accessToken', validUsername);
+
+    data.forEach((user) => {
+      expect(user).toMatchObject({
+        broadcaster_type: expect.stringMatching(/^partner$|^affiliate$|^$/),
+        created_at: expect.any(String),
+        description: expect.any(String),
+        display_name: expect.any(String),
+        id: expect.any(String),
+        login: expect.any(String),
+        offline_image_url: expect.any(String),
+        profile_image_url: expect.any(String),
+        type: expect.stringMatching(/^staff$|^admin$|^global_mod$|^$/),
+      });
     });
   });
 });

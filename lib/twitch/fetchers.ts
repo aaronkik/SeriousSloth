@@ -3,8 +3,11 @@ import {
   clientSecret,
   globalEmotesEndpoint,
   oauth2TokenEndpoint,
+  usersEndpoint,
 } from '~/constants/twitch';
 import {
+  GetUsers,
+  GetUsersResponse,
   GlobalEmotesResponse,
   GlobalEmotesSuccessResponse,
   OAuthClientCredentialsResponse,
@@ -49,6 +52,34 @@ export const fetchGlobalEmotes = async (
   const payload = (await globalEmotesResponse.json()) as GlobalEmotesResponse;
 
   if (!globalEmotesResponse.ok || !('data' in payload)) {
+    return Promise.reject(payload);
+  }
+
+  return payload;
+};
+
+export const fetchUsers = async (
+  accessToken: string,
+  username: string
+): Promise<GetUsers> => {
+  const usernameSearchParams = new URLSearchParams({
+    login: username,
+  }).toString();
+
+  const usersResponse = await fetch(
+    `${usersEndpoint}?${usernameSearchParams}`,
+    {
+      method: 'GET',
+      headers: new Headers({
+        Authorization: `Bearer ${accessToken}`,
+        'Client-Id': clientId,
+      }),
+    }
+  );
+
+  const payload = (await usersResponse.json()) as GetUsersResponse;
+
+  if (!usersResponse.ok || !('data' in payload)) {
     return Promise.reject(payload);
   }
 
