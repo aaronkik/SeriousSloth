@@ -48,6 +48,8 @@ const GlobalEmotesPage = (
               layout='fill'
               objectFit='contain'
               data-testid={`emoteImage${index}`}
+              placeholder='blur'
+              blurDataURL={emote.image}
             />
           </div>
           <p data-testid={`emoteName${index}`}>{emote.name}</p>
