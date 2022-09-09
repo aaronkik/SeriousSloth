@@ -1,7 +1,10 @@
+import autoAnimate from '@formkit/auto-animate';
+import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'react-toastify';
+import { Button, FormErrorMessage, Input, Spinner } from '~/components/shared';
 import { usernameFormRules } from '~/constants/form';
 import { fetchUsers } from '~/lib/api';
-import { toast } from 'react-toastify';
 import { GetUsers } from '~/types/twitch';
 
 interface Props {
@@ -9,8 +12,14 @@ interface Props {
 }
 
 const SearchForm = ({ setUserResponse }: Props) => {
+  const formRef = useRef(null);
+
+  useEffect(() => {
+    formRef.current && autoAnimate(formRef.current);
+  }, []);
+
   const {
-    formState: { errors },
+    formState: { errors, isSubmitting },
     handleSubmit,
     register,
   } = useForm<{ username: string }>({
@@ -32,19 +41,27 @@ const SearchForm = ({ setUserResponse }: Props) => {
   });
 
   return (
-    <form id='user-search-form' role='search' onSubmit={submitUsername}>
-      <input
-        aria-label='user-search'
-        type='search'
-        {...register('username', usernameFormRules)}
-      />
-      <button aria-label='search' type='submit'>
-        Search
-      </button>
+    <form
+      id='user-search-form'
+      onSubmit={submitUsername}
+      ref={formRef}
+      role='search'
+    >
+      <div className='flex gap-4'>
+        <Input
+          aria-label='user-search'
+          placeholder='Twitch'
+          type='search'
+          {...register('username', usernameFormRules)}
+        />
+        <Button aria-label='search' className='min-w-[5rem]' type='submit'>
+          {isSubmitting ? <Spinner className='h-4 w-4' /> : 'Search'}
+        </Button>
+      </div>
       {errors.username && (
-        <p data-testid='searchErrorMessage' role='alert'>
+        <FormErrorMessage className='mt-2' data-testid='searchErrorMessage'>
           {errors.username.message}
-        </p>
+        </FormErrorMessage>
       )}
     </form>
   );
