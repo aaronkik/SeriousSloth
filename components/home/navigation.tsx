@@ -25,7 +25,7 @@ const Navigation = () => (
               <Card className='p-4 flex flex-col items-center'>
                 <Heading
                   className='text-xl md:text-2xl text-purple-400'
-                  variant='h3'
+                  variant='h2'
                 >
                   {title}
                 </Heading>
