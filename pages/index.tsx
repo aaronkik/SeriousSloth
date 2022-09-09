@@ -12,15 +12,15 @@ function HomePage() {
         <title>{homeTitle}</title>
       </Head>
       <div className='py-8 flex flex-col gap-2 items-center'>
-        <div className='w-20 h-20 relative rounded-full'>
-          <Image
-            alt='Sloth face'
-            src={sloth}
-            layout='fill'
-            placeholder='blur'
-            className='rounded-full'
-          />
-        </div>
+        <Image
+          alt='Sloth face'
+          src={sloth}
+          width={80}
+          height={80}
+          layout='fixed'
+          placeholder='blur'
+          className='rounded-full'
+        />
         <Heading variant='h1'>SeriousSloth</Heading>
         <MutedText>A web app that interacts with the Twitch API</MutedText>
       </div>
