@@ -44,18 +44,17 @@ describe('Global emotes page', () => {
     });
   });
 
-  it('Displays error on submit when username pattern does not match', () => {
-    cy.get('form').within(() => {
-      for (const Username of invalidUsernames) {
-        cy.get('input[type="search"]').type(Username);
+  for (const username of invalidUsernames) {
+    it(`Displays error on submit when username (${username}) pattern does not match`, () => {
+      cy.get('form').within(() => {
+        cy.get('input[type="search"]').type(username);
         cy.get('button[type="submit"]').click();
         cy.get('[data-testid="searchErrorMessage"]').contains(
           usernamePatternMessage
         );
-        cy.get('input[type="search"]').clear();
-      }
+      });
     });
-  });
+  }
 
   it('Displays user not found message when no user is returned from a successful API response', () => {
     cy.intercept('POST', '/api/user-search', userNotFound);
