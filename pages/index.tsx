@@ -1,5 +1,5 @@
 import Head from 'next/head';
-import Image from 'next/image';
+import Image from 'next/future/image';
 import { Navigation } from '~/components/home';
 import { Heading, MutedText } from '~/components/shared';
 import { homeTitle } from '~/constants/titles';
@@ -11,13 +11,12 @@ function HomePage() {
       <Head>
         <title>{homeTitle}</title>
       </Head>
-      <div className='py-8 flex flex-col gap-2 items-center'>
+      <div className='flex flex-col items-center gap-2 py-8'>
         <Image
           alt='Sloth face'
           src={sloth}
           width={80}
           height={80}
-          layout='fixed'
           placeholder='blur'
           className='rounded-full'
         />
