@@ -4,7 +4,7 @@ export type GetUsersErrorResponse = {
   message: string;
 };
 
-type User = {
+export type User = {
   broadcaster_type: '' | 'partner' | 'affiliate';
   description: string;
   display_name: string;

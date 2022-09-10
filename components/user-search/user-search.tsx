@@ -10,14 +10,12 @@ const UserSearch = () => {
   );
 
   return (
-    <>
-      <div className='flex flex-col items-center'>
-        <Card className='w-full px-2 py-2 md:w-1/2'>
-          <SearchForm setUserResponse={setUserResponse} />
-        </Card>
-        {userResponse && <User userResponse={userResponse} />}
-      </div>
-    </>
+    <div className='flex flex-col gap-4'>
+      <Card className='w-full px-2 py-2 md:w-1/2 md:self-center'>
+        <SearchForm setUserResponse={setUserResponse} />
+      </Card>
+      {userResponse && <User userResponse={userResponse} />}
+    </div>
   );
 };
 

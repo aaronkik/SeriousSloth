@@ -47,14 +47,19 @@ const SearchForm = ({ setUserResponse }: Props) => {
       ref={formRef}
       role='search'
     >
-      <div className='flex gap-4'>
+      <div className='flex gap-2'>
         <Input
           aria-label='user-search'
           placeholder='Twitch'
           type='search'
           {...register('username', usernameFormRules)}
         />
-        <Button aria-label='search' className='min-w-[5rem]' type='submit'>
+        <Button
+          aria-label='search'
+          className='min-w-[5rem]'
+          disabled={isSubmitting}
+          type='submit'
+        >
           {isSubmitting ? <Spinner className='h-4 w-4' /> : 'Search'}
         </Button>
       </div>
