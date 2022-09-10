@@ -10,21 +10,21 @@ type Props = {
 const GlobalEmotesList = ({ globalEmotes }: Props) => (
   <ul
     data-testid='globalEmoteList'
-    className='flex flex-row gap-6 justify-center flex-wrap py-8'
+    className='flex flex-row flex-wrap justify-center gap-6 py-8'
   >
     {globalEmotes.map((emote, index) => (
       <li key={emote.id}>
-        <Card className='w-36 h-36 p-4'>
-          <div className='flex flex-col gap-2 w-full h-full items-center'>
-            <div className='relative w-full h-full'>
+        <Card className='h-36 w-36 p-4'>
+          <div className='flex h-full w-full flex-col items-center gap-2'>
+            <div className='relative h-full w-full'>
               <Image
                 alt={`${emote.name} emote`}
-                src={emote.image}
+                src={emote.largeImageUrl}
                 layout='fill'
                 objectFit='contain'
                 data-testid={`emoteImage${index}`}
                 placeholder='blur'
-                blurDataURL={emote.image}
+                blurDataURL={emote.blurDataUrl}
               />
             </div>
             <p className='tracking-wide' data-testid={`emoteName${index}`}>

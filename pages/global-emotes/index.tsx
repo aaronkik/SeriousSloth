@@ -1,5 +1,6 @@
 import { InferGetStaticPropsType } from 'next';
 import Head from 'next/head';
+import sharp from 'sharp';
 import {
   DynamicLastUpdated,
   GlobalEmotesList,
@@ -17,21 +18,46 @@ export async function getStaticProps() {
   const { data, template } = await fetchGlobalEmotes(access_token);
 
   /**
-   * Reduce JSON payload/only send neccessary emote information
+   * Create base64 image urls to make use of the nextjs Image component
    */
-  const globalEmotes = data.map((emote) => {
-    const { id, name } = emote;
-    return {
-      id,
-      name,
-      image: formatEmoteCDNUrl(template, {
+  const globalEmotes = await Promise.all(
+    data.map(async (emote) => {
+      const { id, name } = emote;
+
+      const largeImageUrl = formatEmoteCDNUrl(template, {
         id,
         format: 'default',
         theme_mode: 'dark',
         scale: '3.0',
-      }),
-    };
-  });
+      });
+
+      const smallImageUrl = formatEmoteCDNUrl(template, {
+        id,
+        format: 'default',
+        theme_mode: 'dark',
+        scale: '1.0',
+      });
+
+      const response = await fetch(smallImageUrl, {
+        method: 'GET',
+      });
+      const contentType = response.headers.get('Content-Type');
+      const imageBuffer = await response.arrayBuffer();
+      const resizedBuffer = await sharp(Buffer.from(imageBuffer))
+        .resize(5, 5)
+        .toBuffer();
+      const base64Image = Buffer.from(resizedBuffer).toString('base64');
+      // https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URLs
+      const blurDataUrl = `data:${contentType};base64,${base64Image}`;
+
+      return {
+        id,
+        name,
+        largeImageUrl,
+        blurDataUrl,
+      };
+    })
+  );
 
   return {
     props: {
@@ -45,19 +71,17 @@ export async function getStaticProps() {
 const GlobalEmotesPage = ({
   globalEmotes,
   updatedAt,
-}: InferGetStaticPropsType<typeof getStaticProps>) => {
-  return (
-    <>
-      <Head>
-        <title>{globalEmotesTitle}</title>
-      </Head>
-      <div className='py-8 text-center flex items-center flex-col gap-2'>
-        <Heading variant='h1'>Global Emotes</Heading>
-        <DynamicLastUpdated lastUpdated={updatedAt} />
-      </div>
-      <GlobalEmotesList globalEmotes={globalEmotes} />
-    </>
-  );
-};
+}: InferGetStaticPropsType<typeof getStaticProps>) => (
+  <>
+    <Head>
+      <title>{globalEmotesTitle}</title>
+    </Head>
+    <div className='flex flex-col items-center gap-2 py-8 text-center'>
+      <Heading variant='h1'>Global Emotes</Heading>
+      <DynamicLastUpdated lastUpdated={updatedAt} />
+    </div>
+    <GlobalEmotesList globalEmotes={globalEmotes} />
+  </>
+);
 
 export default GlobalEmotesPage;
