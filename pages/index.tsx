@@ -3,8 +3,8 @@ import Image from 'next/future/image';
 import { Navigation } from '~/components/home';
 import { Heading, MutedText } from '~/components/shared';
 import { homeTitle } from '~/constants/titles';
-
 import sloth from '~/public/assets/sloth-face-square.png';
+
 function HomePage() {
   return (
     <>
