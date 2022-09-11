@@ -1,3 +1,21 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  /* Overide react-toastify variables */
+  :root {
+    --toastify-color-light: theme(colors.neutral.700);
+    --toastify-color-info: theme(colors.blue.300);
+    --toastify-color-success: theme(colors.green.300);
+    --toastify-color-warning: theme(colors.orange.300);
+    --toastify-color-error: theme(colors.red.500);
+
+    --toastify-font-family: theme(fontFamily.sans);
+
+    --toastify-text-color-light: theme(colors.neutral.100);
+    --toastify-spinner-color: theme(colors.neutral.100);
+
+    --toastify-color-progress-light: theme(colors.purple.500);
+  }
+}

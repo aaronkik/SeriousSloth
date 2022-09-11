@@ -34,7 +34,7 @@ const SearchForm = ({ setUserResponse }: Props) => {
       setUserResponse(response);
     } catch (error: any) {
       console.error(error);
-      toast(
+      toast.error(
         <div data-testid='userError'>{error?.message || 'Unknown error'}</div>
       );
     }
