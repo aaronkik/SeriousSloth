@@ -21,7 +21,7 @@ const Document = () => (
         href='/assets/favicon-16x16.png'
       />
     </Head>
-    <body className='bg-neutral-900 text-neutral-100 bg-fixed bg-[url("/assets/page-background.svg")] bg-cover object-none h-screen bg-no-repeat'>
+    <body className='bg-neutral-900 text-neutral-100'>
       <Main />
       <NextScript />
     </body>
