@@ -5,7 +5,7 @@ import {
   DynamicLastUpdated,
   GlobalEmotesList,
 } from '~/components/global-emotes';
-import { Heading } from '~/components/shared';
+import { Header, Heading } from '~/components/shared';
 import { globalEmotesTitle } from '~/constants/titles';
 import {
   fetchClientCredentials,
@@ -76,7 +76,8 @@ const GlobalEmotesPage = ({
     <Head>
       <title>{globalEmotesTitle}</title>
     </Head>
-    <div className='flex flex-col items-center gap-2 py-8 text-center'>
+    <Header />
+    <div className='mb-2 flex flex-col items-center gap-2 py-4 text-center'>
       <Heading variant='h1'>Global Emotes</Heading>
       <DynamicLastUpdated lastUpdated={updatedAt} />
     </div>
