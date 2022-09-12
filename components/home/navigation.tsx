@@ -22,7 +22,7 @@ const Navigation = () => (
         <li key={path}>
           <Link href={path} passHref>
             <a>
-              <Card className='flex flex-col items-center p-4'>
+              <Card className='flex flex-col items-center p-4 transition-all duration-150 hover:shadow-md hover:shadow-purple-500/10'>
                 <Heading
                   className='text-xl text-purple-500 md:text-2xl'
                   variant='h2'
