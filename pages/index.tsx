@@ -10,7 +10,7 @@ function HomePage() {
       <Head>
         <title>{homeTitle}</title>
       </Head>
-      <div className='flex flex-col items-center gap-2 py-8'>
+      <div className='mb-12 flex flex-col items-center gap-2'>
         <SlothLogo className='rounded-full' width={80} height={80} />
         <Heading variant='h1'>SeriousSloth</Heading>
         <MutedText>A web app that interacts with the Twitch API</MutedText>

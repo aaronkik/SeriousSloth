@@ -1,10 +1,14 @@
 export { default as Button } from './button';
 export { default as Card } from './card';
 export { default as Container } from './container';
+export { default as Footer } from './footer';
 export { default as FormErrorMessage } from './form-error-message';
 export { default as Header } from './header';
 export { default as Heading } from './heading';
 export { default as Input } from './input';
+export { default as Link } from './link';
 export { default as MutedText } from './muted-text';
+export { default as PageLayout } from './page-layout';
 export { default as Spinner } from './spinner';
 export { default as Skeleton } from './skeleton';
+export { default as SlothLogo } from './sloth-logo';

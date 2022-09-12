@@ -17,14 +17,14 @@ const navigationRoutes = [
 
 const Navigation = () => (
   <nav>
-    <ul className='grid grid-cols-1 sm:grid-cols-2 gap-6 grid-rows-1'>
+    <ul className='grid grid-cols-1 grid-rows-1 gap-6 sm:grid-cols-2'>
       {navigationRoutes.map(({ path, title, description }) => (
         <li key={path}>
           <Link href={path} passHref>
             <a>
-              <Card className='p-4 flex flex-col items-center'>
+              <Card className='flex flex-col items-center p-4'>
                 <Heading
-                  className='text-xl md:text-2xl text-purple-400'
+                  className='text-xl text-purple-500 md:text-2xl'
                   variant='h2'
                 >
                   {title}

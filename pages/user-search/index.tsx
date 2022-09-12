@@ -1,5 +1,5 @@
 import Head from 'next/head';
-import { Header, Heading } from '~/components/shared';
+import { Heading } from '~/components/shared';
 import { UserSearch } from '~/components/user-search';
 import { userSearchTitle } from '~/constants/titles';
 
@@ -9,8 +9,7 @@ const UserSearchPage = () => {
       <Head>
         <title>{userSearchTitle}</title>
       </Head>
-      <Header />
-      <Heading className='mb-2 py-4 text-center' variant='h1'>
+      <Heading className='mb-2 text-center' variant='h1'>
         User Search
       </Heading>
       <UserSearch />
