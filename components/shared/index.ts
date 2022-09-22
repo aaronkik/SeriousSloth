@@ -12,3 +12,4 @@ export { default as PageLayout } from './page-layout';
 export { default as Spinner } from './spinner';
 export { default as Skeleton } from './skeleton';
 export { default as SlothLogo } from './sloth-logo';
+export { default as TwitchLink } from './twitch-link';
