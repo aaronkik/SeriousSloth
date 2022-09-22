@@ -15,7 +15,7 @@ const HistoricTopStreamsPage = () => {
       >
         Historic Top Streams
       </Heading>
-      <div className='flex justify-center py-8'>
+      <div className='flex flex-col items-center gap-4 py-8'>
         <TopStreamTimes />
       </div>
     </>
