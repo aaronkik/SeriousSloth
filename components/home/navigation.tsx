@@ -3,6 +3,11 @@ import { Card, Heading } from '../shared';
 
 const navigationRoutes = [
   {
+    path: '/historic-top-streams',
+    title: 'Historic Top Streams',
+    description: 'View past top streams on Twitch',
+  },
+  {
     path: '/global-emotes',
     title: 'Global Emotes',
     description: 'See current global emotes on Twitch',
