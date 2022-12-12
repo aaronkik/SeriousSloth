@@ -18,7 +18,6 @@
   "dependencies": {
     "@formkit/auto-animate": "^1.0.0-beta.3",
     "@heroicons/react": "^1.0.6",
-    "@supabase/supabase-js": "^1.35.7",
     "dayjs": "^1.11.5",
     "next": "12.3.0",
     "react": "18.2.0",
