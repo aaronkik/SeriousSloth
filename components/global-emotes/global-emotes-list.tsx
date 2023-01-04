@@ -19,12 +19,12 @@ const GlobalEmotesList = ({ globalEmotes }: Props) => (
             <div className='relative h-full w-full'>
               <Image
                 alt={`${emote.name} emote`}
-                src={emote.largeImageUrl}
-                layout='fill'
-                objectFit='contain'
-                data-testid={`emoteImage${index}`}
-                placeholder='blur'
                 blurDataURL={emote.blurDataUrl}
+                data-testid={`emoteImage${index}`}
+                fill
+                placeholder='blur'
+                src={emote.largeImageUrl}
+                style={{ objectFit: 'contain' }}
               />
             </div>
             <p className='tracking-wide' data-testid={`emoteName${index}`}>
