@@ -1,5 +1,5 @@
 import { ExternalLinkIcon } from '@heroicons/react/solid';
-import Image from 'next/future/image';
+import Image from 'next/image';
 import { ReactNode } from 'react';
 import { Card, Heading } from '~/components/shared';
 import { capitaliseFirstLetter, formatDate, timeFromNow } from '~/lib/helpers';

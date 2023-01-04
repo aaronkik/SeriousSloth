@@ -11,8 +11,6 @@ A web app that interacts with the Twitch API
 - [msw (Mock Service Worker)](https://mswjs.io/) - Mocking requests used in Jest
 - [Cypress](https://www.cypress.io/) - E2E testing
 - [Tailwind CSS](https://tailwindcss.com/) - CSS framework
-- [Supabase](https://supabase.com/) - Open source Firebase alternative
-- [AWS Infrastructure](https://github.com/aaronkik/SeriousSlothCloudInfra) - AWS EventBridge + Lambda for fetching top streams
 
 ## APIs Used
 
