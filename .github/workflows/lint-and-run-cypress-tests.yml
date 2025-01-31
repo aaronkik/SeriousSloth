@@ -12,7 +12,7 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version-file: 'package.json'
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
@@ -22,17 +22,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint
     timeout-minutes: 10
-    strategy:
-      matrix:
-        # start-server-and-test does not work with 18.x
-        node-version: [14.x, 16.x]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Setup node with ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version-file: 'package.json'
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
@@ -42,7 +38,6 @@ jobs:
           browser: chrome
           install: false
           record: true
-          tag: node-${{ matrix.node }}
           build: npm run build
           command: npm run e2e:headless
         env:
