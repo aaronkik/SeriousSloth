@@ -1,7 +1,7 @@
 const seriousSloth = 'SeriousSloth';
-const seperator = '|';
+const separator = '|';
 
-export const globalEmotesTitle = `Global Emotes ${seperator} ${seriousSloth}`;
-export const historicTopStreamsTitle = `Historic Top Streams ${seperator} ${seriousSloth}`;
+export const globalEmotesTitle = `Global Emotes ${separator} ${seriousSloth}`;
+export const historicTopStreamsTitle = `Historic Top Streams ${separator} ${seriousSloth}`;
 export const homeTitle = seriousSloth;
-export const userSearchTitle = `User Search ${seperator} ${seriousSloth}`;
+export const userSearchTitle = `User Search ${separator} ${seriousSloth}`;
