@@ -1,6 +1,5 @@
 import { InferGetStaticPropsType } from 'next';
 import Head from 'next/head';
-import sharp from 'sharp';
 import {
   DynamicLastUpdated,
   GlobalEmotesList,
@@ -17,47 +16,18 @@ export async function getStaticProps() {
   const { access_token } = await fetchClientCredentials();
   const { data, template } = await fetchGlobalEmotes(access_token);
 
-  /**
-   * Create base64 image urls to make use of the nextjs Image component
-   */
-  const globalEmotes = await Promise.all(
-    data.map(async (emote) => {
-      const { id, name } = emote;
+  const globalEmotes = data.map((emote) => {
+    const { id, name } = emote;
 
-      const largeImageUrl = formatEmoteCDNUrl(template, {
-        id,
-        format: 'default',
-        theme_mode: 'dark',
-        scale: '3.0',
-      });
+    const largeImageUrl = formatEmoteCDNUrl(template, {
+      id,
+      format: 'default',
+      theme_mode: 'dark',
+      scale: '3.0',
+    });
 
-      const smallImageUrl = formatEmoteCDNUrl(template, {
-        id,
-        format: 'default',
-        theme_mode: 'dark',
-        scale: '1.0',
-      });
-
-      const response = await fetch(smallImageUrl, {
-        method: 'GET',
-      });
-      const contentType = response.headers.get('Content-Type');
-      const imageBuffer = await response.arrayBuffer();
-      const resizedBuffer = await sharp(Buffer.from(imageBuffer))
-        .resize(5, 5)
-        .toBuffer();
-      const base64Image = Buffer.from(resizedBuffer).toString('base64');
-      // https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URLs
-      const blurDataUrl = `data:${contentType};base64,${base64Image}`;
-
-      return {
-        id,
-        name,
-        largeImageUrl,
-        blurDataUrl,
-      };
-    })
-  );
+    return { id, name, largeImageUrl };
+  });
 
   return {
     props: {
