@@ -1,12 +1,10 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
-/node_modules
+node_modules
 /.pnp
 .pnp.js
 
 # testing
-/coverage
+coverage
 
 # msw
 public/mockServiceWorker.js
@@ -17,7 +15,7 @@ cypress/videos
 cypress/screenshots
 
 # next.js
-/.next/
+.next/
 /out/
 
 # production
@@ -42,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# turbo
+.turbo
