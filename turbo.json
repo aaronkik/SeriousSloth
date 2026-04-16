@@ -18,6 +18,18 @@
     },
     "test:ci": {
       "dependsOn": ["^build"]
+    },
+    "local:create": {
+      "cache": false
+    },
+    "local:up": {
+      "cache": false
+    },
+    "local:preview": {
+      "cache": false
+    },
+    "local:destroy": {
+      "cache": false
     }
   }
 }
