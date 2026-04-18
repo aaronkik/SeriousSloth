@@ -14,7 +14,10 @@ import (
 func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
 		gitRemoteUrl := util.GitCli("remote", "get-url", "origin")
-		gitRepoSlug := strings.TrimSuffix(gitRemoteUrl, ".git")[strings.Index(gitRemoteUrl, ":")+1:]
+		gitRepoSlug, err := util.GetRepositorySlug(gitRemoteUrl)
+		if err != nil {
+			return err
+		}
 
 		deploymentSettings, err := pulumiservice.NewDeploymentSettings(ctx, "deploymentSettingsResource", &pulumiservice.DeploymentSettingsArgs{
 			Organization: pulumi.String(ctx.Organization()),
