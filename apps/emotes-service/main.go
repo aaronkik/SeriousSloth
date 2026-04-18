@@ -1,20 +1,81 @@
 package main
 
 import (
-	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/s3"
+	"emotes-service/util"
+	"time"
+
+	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws"
+	"github.com/pulumi/pulumi-pulumiservice/sdk/go/pulumiservice"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 )
 
 func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
-		// Create an AWS resource (S3 Bucket)
-		bucket, err := s3.NewBucket(ctx, "my-bucket", nil)
+		deploymentSettings, err := pulumiservice.NewDeploymentSettings(ctx, "deploymentSettingsResource", &pulumiservice.DeploymentSettingsArgs{
+			Organization: pulumi.String(ctx.Organization()),
+			Project:      pulumi.String(ctx.Project()),
+			Stack:        pulumi.String(ctx.Stack()),
+			CacheOptions: &pulumiservice.DeploymentSettingsCacheOptionsArgs{
+				Enable: pulumi.Bool(true),
+			},
+			Vcs: &pulumiservice.DeploymentSettingsVcsArgs{
+				DeployCommits:       pulumi.Bool(true),
+				PreviewPullRequests: pulumi.Bool(true),
+				Provider:            pulumi.String("github"),
+				Repository:          pulumi.String("aaronkik/SeriousSloth"),
+			},
+			SourceContext: &pulumiservice.DeploymentSettingsSourceContextArgs{
+				Git: &pulumiservice.DeploymentSettingsGitSourceArgs{
+					Branch:  pulumi.String(util.GitCli("branch", "--show")),
+					RepoDir: pulumi.String("apps/emotes-service"),
+				},
+			},
+		})
 		if err != nil {
 			return err
 		}
 
-		// Export the name of the bucket
-		ctx.Export("bucketName", bucket.ID())
+		now := time.Now()
+		stackDestruction := now.Add(time.Hour * 24 * 3)
+
+		_, err = pulumiservice.NewTtlSchedule(ctx, "ttlSchedule", &pulumiservice.TtlScheduleArgs{
+			Organization: pulumi.String(ctx.Organization()),
+			Project:      pulumi.String(ctx.Project()),
+			Stack:        pulumi.String(ctx.Stack()),
+			Timestamp:    pulumi.String(stackDestruction.UTC().Format(time.RFC3339)),
+		}, pulumi.DependsOn([]pulumi.Resource{deploymentSettings}))
+		if err != nil {
+			return err
+		}
+
+		awsConfig := config.New(ctx, "aws")
+		awsRegion := awsConfig.Require("region")
+
+		provider, err := aws.NewProvider(ctx, "awsProvider", &aws.ProviderArgs{
+			Region: pulumi.String(awsRegion),
+			DefaultTags: &aws.ProviderDefaultTagsArgs{
+				Tags: pulumi.StringMap{
+					"Project":    pulumi.String(ctx.Project()),
+					"Stack":      pulumi.String(ctx.Stack()),
+					"ManagedBy":  pulumi.String("pulumi"),
+					"Repository": pulumi.String(util.GitCli("remote", "get-url", "origin")),
+					"Commit":     pulumi.String(util.GitCli("rev-parse", "HEAD")),
+				},
+			},
+		})
+		if err != nil {
+			return err
+		}
+
+		providerResource := pulumi.Provider(provider)
+
+		stateful, err := NewStatefulComponent(ctx, "stateful", providerResource)
+		if err != nil {
+			return err
+		}
+
+		ctx.Export("bucketName", stateful.EmotesBucket.ID())
 		return nil
 	})
 }
