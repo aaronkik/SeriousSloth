@@ -2,6 +2,9 @@ name: emotes-service
 description: Service responsible for ingesting twitch emotes
 runtime: go
 config:
+  pulumi:autonaming:
+    value:
+      pattern: ${project}-${name}-${stack}-${hex(4)}
   pulumi:tags:
     value:
       pulumi:template: aws-go
