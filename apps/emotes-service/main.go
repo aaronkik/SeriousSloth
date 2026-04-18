@@ -2,6 +2,7 @@ package main
 
 import (
 	"emotes-service/util"
+	"strings"
 	"time"
 
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws"
@@ -12,6 +13,9 @@ import (
 
 func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
+		gitRemoteUrl := util.GitCli("remote", "get-url", "origin")
+		gitRepoSlug := strings.TrimSuffix(gitRemoteUrl, ".git")[strings.Index(gitRemoteUrl, ":")+1:]
+
 		deploymentSettings, err := pulumiservice.NewDeploymentSettings(ctx, "deploymentSettingsResource", &pulumiservice.DeploymentSettingsArgs{
 			Organization: pulumi.String(ctx.Organization()),
 			Project:      pulumi.String(ctx.Project()),
@@ -23,12 +27,12 @@ func main() {
 				DeployCommits:       pulumi.Bool(true),
 				PreviewPullRequests: pulumi.Bool(true),
 				Provider:            pulumi.String("github"),
-				Repository:          pulumi.String("aaronkik/SeriousSloth"),
+				Repository:          pulumi.String(gitRepoSlug),
 			},
 			SourceContext: &pulumiservice.DeploymentSettingsSourceContextArgs{
 				Git: &pulumiservice.DeploymentSettingsGitSourceArgs{
 					Branch:  pulumi.String(util.GitCli("branch", "--show")),
-					RepoDir: pulumi.String("apps/emotes-service"),
+					RepoDir: pulumi.String(strings.TrimSuffix(util.GitCli("rev-parse", "--show-prefix"), "/")),
 				},
 			},
 		})
@@ -59,7 +63,7 @@ func main() {
 					"Project":    pulumi.String(ctx.Project()),
 					"Stack":      pulumi.String(ctx.Stack()),
 					"ManagedBy":  pulumi.String("pulumi"),
-					"Repository": pulumi.String(util.GitCli("remote", "get-url", "origin")),
+					"Repository": pulumi.String(gitRemoteUrl),
 					"Commit":     pulumi.String(util.GitCli("rev-parse", "HEAD")),
 				},
 			},
