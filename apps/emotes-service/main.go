@@ -43,14 +43,16 @@ func main() {
 		now := time.Now()
 		stackDestruction := now.Add(time.Hour * 24 * 3)
 
-		_, err = pulumiservice.NewTtlSchedule(ctx, "ttlSchedule", &pulumiservice.TtlScheduleArgs{
-			Organization: pulumi.String(ctx.Organization()),
-			Project:      pulumi.String(ctx.Project()),
-			Stack:        pulumi.String(ctx.Stack()),
-			Timestamp:    pulumi.String(stackDestruction.UTC().Format(time.RFC3339)),
-		}, pulumi.DependsOn([]pulumi.Resource{deploymentSettings}))
-		if err != nil {
-			return err
+		if util.IsEphemeral(ctx.Stack()) {
+			_, err = pulumiservice.NewTtlSchedule(ctx, "ttlSchedule", &pulumiservice.TtlScheduleArgs{
+				Organization: pulumi.String(ctx.Organization()),
+				Project:      pulumi.String(ctx.Project()),
+				Stack:        pulumi.String(ctx.Stack()),
+				Timestamp:    pulumi.String(stackDestruction.UTC().Format(time.RFC3339)),
+			}, pulumi.DependsOn([]pulumi.Resource{deploymentSettings}))
+			if err != nil {
+				return err
+			}
 		}
 
 		awsConfig := config.New(ctx, "aws")
