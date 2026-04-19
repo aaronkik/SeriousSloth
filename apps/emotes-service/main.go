@@ -19,7 +19,7 @@ func main() {
 			return err
 		}
 
-		deploymentSettings, err := pulumiservice.NewDeploymentSettings(ctx, "deploymentSettingsResource", &pulumiservice.DeploymentSettingsArgs{
+		deploymentSettings, err := pulumiservice.NewDeploymentSettings(ctx, "deployment-settings-resource", &pulumiservice.DeploymentSettingsArgs{
 			Organization: pulumi.String(ctx.Organization()),
 			Project:      pulumi.String(ctx.Project()),
 			Stack:        pulumi.String(ctx.Stack()),
@@ -47,7 +47,7 @@ func main() {
 		stackDestruction := now.Add(time.Hour * 24 * 3)
 
 		if util.IsEphemeral(ctx.Stack()) {
-			_, err = pulumiservice.NewTtlSchedule(ctx, "ttlSchedule", &pulumiservice.TtlScheduleArgs{
+			_, err = pulumiservice.NewTtlSchedule(ctx, "ttl-schedule", &pulumiservice.TtlScheduleArgs{
 				Organization: pulumi.String(ctx.Organization()),
 				Project:      pulumi.String(ctx.Project()),
 				Stack:        pulumi.String(ctx.Stack()),
@@ -61,7 +61,7 @@ func main() {
 		awsConfig := config.New(ctx, "aws")
 		awsRegion := awsConfig.Require("region")
 
-		provider, err := aws.NewProvider(ctx, "awsProvider", &aws.ProviderArgs{
+		provider, err := aws.NewProvider(ctx, "aws-provider", &aws.ProviderArgs{
 			Region: pulumi.String(awsRegion),
 			DefaultTags: &aws.ProviderDefaultTagsArgs{
 				Tags: pulumi.StringMap{
