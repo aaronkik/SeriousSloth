@@ -1,6 +1,7 @@
 name: emotes-service
 description: Service responsible for ingesting twitch emotes
 runtime: go
+main: infra
 config:
   pulumi:autonaming:
     value:

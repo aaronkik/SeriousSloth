@@ -1,7 +1,7 @@
 package main
 
 import (
-	"emotes-service/util"
+	"emotes-service/infra/util"
 	"strings"
 	"time"
 

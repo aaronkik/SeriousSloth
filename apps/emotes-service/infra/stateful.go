@@ -1,7 +1,7 @@
 package main
 
 import (
-	"emotes-service/util"
+	"emotes-service/infra/util"
 
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/dynamodb"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"

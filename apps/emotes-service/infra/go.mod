@@ -1,4 +1,4 @@
-module emotes-service
+module emotes-service/infra
 
 go 1.26.2
 
