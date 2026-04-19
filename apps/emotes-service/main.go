@@ -79,12 +79,11 @@ func main() {
 
 		providerResource := pulumi.Provider(provider)
 
-		stateful, err := NewStatefulComponent(ctx, "stateful", providerResource)
+		_, err = NewStatefulComponent(ctx, "stateful", providerResource)
 		if err != nil {
 			return err
 		}
 
-		ctx.Export("bucketName", stateful.EmotesBucket.ID())
 		return nil
 	})
 }
