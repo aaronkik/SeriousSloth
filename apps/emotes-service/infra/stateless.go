@@ -22,7 +22,7 @@ func NewStatelessComponent(ctx *pulumi.Context, name string, providerResource pu
 		Code: pulumi.NewAssetArchive(map[string]interface{}{
 			"bootstrap": pulumi.NewFileAsset("../dist/sync-global-emotes/bootstrap"),
 		}),
-	})
+	}, pulumi.Parent(component), providerResource)
 	if err != nil {
 		return nil, err
 	}
