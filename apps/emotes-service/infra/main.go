@@ -43,8 +43,9 @@ func main() {
 			return err
 		}
 
-		now := time.Now()
-		stackDestruction := now.Add(time.Hour * 24 * 3)
+		now := time.Now().UTC()
+		daysUntilSunday := (7 - int(now.Weekday())) % 7
+		stackDestruction := time.Date(now.Year(), now.Month(), now.Day()+daysUntilSunday, 23, 59, 59, 0, time.UTC)
 
 		if util.IsEphemeral(ctx.Stack()) {
 			_, err = pulumiservice.NewTtlSchedule(ctx, "ttl-schedule", &pulumiservice.TtlScheduleArgs{
