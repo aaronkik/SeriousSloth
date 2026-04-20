@@ -85,6 +85,11 @@ func main() {
 			return err
 		}
 
+		_, err = NewStatelessComponent(ctx, "stateless", providerResource)
+		if err != nil {
+			return err
+		}
+
 		return nil
 	})
 }
