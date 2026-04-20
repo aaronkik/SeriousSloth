@@ -4,12 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "echo 'Add dev script here'",
-    "build": "echo 'Add build script here'",
+    "build": "./scripts/build.sh",
     "test": "echo 'Add test script here'",
     "lint": "gofmt -w .",
     "local:create": "STACK_NAME=$(./scripts/stack-name.sh) && pulumi stack init $STACK_NAME && pulumi config env add emotes-service/local-dev -s $STACK_NAME --yes && pulumi config set app:stage $STACK_NAME -s $STACK_NAME",
-    "local:up": "STACK_NAME=$(./scripts/stack-name.sh) && pulumi up -s $STACK_NAME --yes",
-    "local:preview": "STACK_NAME=$(./scripts/stack-name.sh) && pulumi preview -s $STACK_NAME",
+    "local:up": "STACK_NAME=$(./scripts/stack-name.sh) && ./scripts/build.sh && pulumi up -s $STACK_NAME --yes",
+    "local:preview": "STACK_NAME=$(./scripts/stack-name.sh) && ./scripts/build.sh && pulumi preview -s $STACK_NAME",
     "local:destroy": "STACK_NAME=$(./scripts/stack-name.sh) && pulumi destroy -s $STACK_NAME --yes && pulumi stack rm $STACK_NAME --yes"
   }
 }
