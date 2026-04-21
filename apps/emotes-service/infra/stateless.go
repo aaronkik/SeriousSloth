@@ -2,6 +2,7 @@ package main
 
 import (
 	"emotes-service/infra/components/shared"
+	"emotes-service/infra/stack"
 
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws"
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/iam"
@@ -13,7 +14,7 @@ type StatelessComponent struct {
 	pulumi.ResourceState
 }
 
-func NewStatelessComponent(ctx *pulumi.Context, name string, providerResource pulumi.ResourceOption) (*StatelessComponent, error) {
+func NewStatelessComponent(ctx *pulumi.Context, name string, providerResource pulumi.ResourceOption, applicationConfig stack.ApplicationConfig) (*StatelessComponent, error) {
 	component := &StatelessComponent{}
 
 	err := ctx.RegisterComponentResourceV2("emotes-service:index:StatelessComponent", name, nil, component)
@@ -25,6 +26,10 @@ func NewStatelessComponent(ctx *pulumi.Context, name string, providerResource pu
 		Code: pulumi.NewAssetArchive(map[string]interface{}{
 			"bootstrap": pulumi.NewFileAsset("../dist/sync-global-emotes/bootstrap"),
 		}),
+		Environment: map[string]pulumi.StringInput{
+			"TWITCH_GLOBAL_EMOTES_ENDPOINT": pulumi.String(applicationConfig.Twitch.GlobalEmotesEndpoint),
+			"TWITCH_OAUTH_ENDPOINT":         pulumi.String(applicationConfig.Twitch.OauthEndpoint),
+		},
 	}, pulumi.Parent(component), providerResource)
 	if err != nil {
 		return nil, err

@@ -81,12 +81,14 @@ func main() {
 
 		providerResource := pulumi.Provider(provider)
 
+		appConfig := stack.GetApplicationConfig()
+
 		_, err = NewStatefulComponent(ctx, "stateful", providerResource)
 		if err != nil {
 			return err
 		}
 
-		_, err = NewStatelessComponent(ctx, "stateless", providerResource)
+		_, err = NewStatelessComponent(ctx, "stateless", providerResource, appConfig)
 		if err != nil {
 			return err
 		}
