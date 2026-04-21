@@ -1,7 +1,7 @@
 package components
 
 import (
-	"emotes-service/infra/util"
+	"emotes-service/infra/stack"
 	"encoding/json"
 	"fmt"
 
@@ -39,7 +39,7 @@ func NewLambda(ctx *pulumi.Context, name string, args *LambdaArgs, opts ...pulum
 	}
 
 	logRetentionDays := 1
-	if util.IsProduction(ctx.Stack()) {
+	if stack.IsProduction(ctx.Stack()) {
 		logRetentionDays = 7
 	}
 
@@ -113,7 +113,7 @@ func NewLambda(ctx *pulumi.Context, name string, args *LambdaArgs, opts ...pulum
 	}
 
 	logLevel := "INFO"
-	if util.IsEphemeral(ctx.Stack()) {
+	if stack.IsEphemeral(ctx.Stack()) {
 		logLevel = "DEBUG"
 	}
 

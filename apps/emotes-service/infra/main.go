@@ -1,7 +1,8 @@
 package main
 
 import (
-	"emotes-service/infra/util"
+	"emotes-service/infra/git"
+	"emotes-service/infra/stack"
 	"strings"
 	"time"
 
@@ -13,8 +14,8 @@ import (
 
 func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
-		gitRemoteUrl := util.GitCli("remote", "get-url", "origin")
-		gitRepoSlug, err := util.GetRepositorySlug(gitRemoteUrl)
+		gitRemoteUrl := git.Cli("remote", "get-url", "origin")
+		gitRepoSlug, err := git.GetRepositorySlug(gitRemoteUrl)
 		if err != nil {
 			return err
 		}
@@ -34,8 +35,8 @@ func main() {
 			},
 			SourceContext: &pulumiservice.DeploymentSettingsSourceContextArgs{
 				Git: &pulumiservice.DeploymentSettingsGitSourceArgs{
-					Branch:  pulumi.String(util.GitCli("branch", "--show")),
-					RepoDir: pulumi.String(strings.TrimSuffix(util.GitCli("rev-parse", "--show-prefix"), "/")),
+					Branch:  pulumi.String(git.Cli("branch", "--show")),
+					RepoDir: pulumi.String(strings.TrimSuffix(git.Cli("rev-parse", "--show-prefix"), "/")),
 				},
 			},
 		})
@@ -47,7 +48,7 @@ func main() {
 		daysUntilSunday := (7 - int(now.Weekday())) % 7
 		stackDestruction := time.Date(now.Year(), now.Month(), now.Day()+daysUntilSunday, 23, 59, 59, 0, time.UTC)
 
-		if util.IsEphemeral(ctx.Stack()) {
+		if stack.IsEphemeral(ctx.Stack()) {
 			_, err = pulumiservice.NewTtlSchedule(ctx, "ttl-schedule", &pulumiservice.TtlScheduleArgs{
 				Organization: pulumi.String(ctx.Organization()),
 				Project:      pulumi.String(ctx.Project()),
@@ -70,7 +71,7 @@ func main() {
 					"Stack":      pulumi.String(ctx.Stack()),
 					"ManagedBy":  pulumi.String("pulumi"),
 					"Repository": pulumi.String(gitRemoteUrl),
-					"Commit":     pulumi.String(util.GitCli("rev-parse", "HEAD")),
+					"Commit":     pulumi.String(git.Cli("rev-parse", "HEAD")),
 				},
 			},
 		})

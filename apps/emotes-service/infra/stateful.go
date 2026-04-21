@@ -1,7 +1,7 @@
 package main
 
 import (
-	"emotes-service/infra/util"
+	"emotes-service/infra/stack"
 
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/dynamodb"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
@@ -34,7 +34,7 @@ func NewStatefulComponent(ctx *pulumi.Context, name string, providerResource pul
 				Type: pulumi.String("S"),
 			},
 		},
-		DeletionProtectionEnabled: pulumi.BoolPtr(util.IsProduction(ctx.Stack())),
+		DeletionProtectionEnabled: pulumi.BoolPtr(stack.IsProduction(ctx.Stack())),
 	}, pulumi.Parent(component), providerResource)
 	if err != nil {
 		return nil, err

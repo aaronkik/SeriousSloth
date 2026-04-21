@@ -1,4 +1,4 @@
-package util
+package git
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func GitCli(args ...string) string {
+func Cli(args ...string) string {
 	out, err := exec.Command("git", args...).Output()
 	if err != nil {
 		return "Unknown"
