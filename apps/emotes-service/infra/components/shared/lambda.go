@@ -118,7 +118,8 @@ func NewLambda(ctx *pulumi.Context, name string, args *LambdaArgs, opts ...pulum
 	}
 
 	envVars := pulumi.StringMap{
-		"AWS_LAMBDA_LOG_LEVEL": pulumi.String(logLevel),
+		"AWS_LAMBDA_LOG_FORMAT": pulumi.String("JSON"),
+		"AWS_LAMBDA_LOG_LEVEL":  pulumi.String(logLevel),
 	}
 	for k, v := range args.Environment {
 		envVars[k] = v
