@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
-	"log/slog"
-
+	"emotes-service/src/adapters/secondary/dynamodb"
 	"emotes-service/src/adapters/secondary/twitch"
+	"emotes-service/src/environment"
+	"log/slog"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -19,7 +21,17 @@ func handler(ctx context.Context, event events.CloudWatchEvent) error {
 		return err
 	}
 
-	_, err = twitch.GetGlobalEmotes(accessToken)
+	globalEmotes, err := twitch.GetGlobalEmotes(accessToken)
+	if err != nil {
+		return err
+	}
+
+	err = dynamodb.PutItem(dynamodb.PutItemInput{
+		TableName:  environment.GetOrFatal("TWITCH_EMOTES_SNAPSHOT_TABLE"),
+		PK:         "GLOBAL",
+		SK:         new(time.Now().UTC().Format(time.RFC3339)),
+		Attributes: map[string]interface{}{"globalEmotes": globalEmotes},
+	})
 	if err != nil {
 		return err
 	}

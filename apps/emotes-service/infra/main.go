@@ -84,12 +84,12 @@ func main() {
 
 		appConfig := stack.GetApplicationConfig()
 
-		_, err = NewStatefulComponent(ctx, "stateful", providerResource)
+		statefulComponent, err := NewStatefulComponent(ctx, providerResource)
 		if err != nil {
 			return err
 		}
 
-		_, err = NewStatelessComponent(ctx, "stateless", providerResource, appConfig)
+		_, err = NewStatelessComponent(ctx, providerResource, appConfig, StatefulResource{twitchEmotesSnapshotsTable: statefulComponent.TwitchEmotesSnapshotsTable})
 		if err != nil {
 			return err
 		}

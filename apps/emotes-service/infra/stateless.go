@@ -5,6 +5,7 @@ import (
 	"emotes-service/infra/stack"
 
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws"
+	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/dynamodb"
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/iam"
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/scheduler"
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/ssm"
@@ -16,10 +17,14 @@ type StatelessComponent struct {
 	pulumi.ResourceState
 }
 
-func NewStatelessComponent(ctx *pulumi.Context, name string, providerResource pulumi.ResourceOption, applicationConfig stack.ApplicationConfig) (*StatelessComponent, error) {
+type StatefulResource struct {
+	twitchEmotesSnapshotsTable *dynamodb.Table
+}
+
+func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.ResourceOption, applicationConfig stack.ApplicationConfig, statefulResource StatefulResource) (*StatelessComponent, error) {
 	component := &StatelessComponent{}
 
-	err := ctx.RegisterComponentResourceV2("emotes-service:index:StatelessComponent", name, nil, component)
+	err := ctx.RegisterComponentResourceV2("emotes-service:index:StatelessComponent", "stateless", nil, component)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +36,10 @@ func NewStatelessComponent(ctx *pulumi.Context, name string, providerResource pu
 	twitchClientIdParam, err := ssm.NewParameter(ctx, "twitch-client-id", &ssm.ParameterArgs{
 		Type:  pulumi.String(ssm.ParameterTypeSecureString),
 		Value: pulumi.StringInput(twitchClientId),
-	}, pulumi.Parent(component), providerResource)
+	},
+		pulumi.Parent(component),
+		providerResource,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +47,10 @@ func NewStatelessComponent(ctx *pulumi.Context, name string, providerResource pu
 	twitchClientSecretParam, err := ssm.NewParameter(ctx, "twitch-client-secret", &ssm.ParameterArgs{
 		Type:  pulumi.String(ssm.ParameterTypeSecureString),
 		Value: pulumi.StringInput(twitchClientSecret),
-	}, pulumi.Parent(component), providerResource)
+	},
+		pulumi.Parent(component),
+		providerResource,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -49,6 +60,7 @@ func NewStatelessComponent(ctx *pulumi.Context, name string, providerResource pu
 			"bootstrap": pulumi.NewFileAsset("../dist/sync-global-emotes/bootstrap"),
 		}),
 		Environment: map[string]pulumi.StringInput{
+			"TWITCH_EMOTES_SNAPSHOT_TABLE":   pulumi.StringInput(statefulResource.twitchEmotesSnapshotsTable.Name),
 			"TWITCH_GLOBAL_EMOTES_ENDPOINT":  pulumi.String(applicationConfig.Twitch.GlobalEmotesEndpoint),
 			"TWITCH_OAUTH_ENDPOINT":          pulumi.String(applicationConfig.Twitch.OauthEndpoint),
 			"TWITCH_CLIENT_ID_PARAM_ARN":     pulumi.StringInput(twitchClientIdParam.Arn),
@@ -63,8 +75,22 @@ func NewStatelessComponent(ctx *pulumi.Context, name string, providerResource pu
 					twitchClientSecretParam.Arn,
 				},
 			},
+			&iam.GetPolicyDocumentStatementArgs{
+				Effect:  pulumi.String("Allow"),
+				Actions: pulumi.StringArray{pulumi.String("dynamodb:PutItem")},
+				Resources: pulumi.StringArray{
+					statefulResource.twitchEmotesSnapshotsTable.Arn,
+				},
+			},
 		},
-	}, pulumi.Parent(component), providerResource, pulumi.DependsOn([]pulumi.Resource{twitchClientIdParam, twitchClientSecretParam}))
+	},
+		pulumi.Parent(component),
+		providerResource,
+		pulumi.DependsOn([]pulumi.Resource{
+			twitchClientIdParam,
+			twitchClientSecretParam,
+			statefulResource.twitchEmotesSnapshotsTable,
+		}))
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +126,10 @@ func NewStatelessComponent(ctx *pulumi.Context, name string, providerResource pu
 				},
 			},
 		}).Json(),
-	}, pulumi.Parent(component), providerResource)
+	},
+		pulumi.Parent(component),
+		providerResource,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +148,14 @@ func NewStatelessComponent(ctx *pulumi.Context, name string, providerResource pu
 				},
 			},
 		}).Json(),
-	}, pulumi.Parent(component), providerResource, pulumi.DependsOn([]pulumi.Resource{syncGlobalEmotesLambda}))
+	},
+		pulumi.Parent(component),
+		providerResource,
+		pulumi.DependsOn([]pulumi.Resource{
+			syncGlobalEmotesLambda,
+		},
+		),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +176,10 @@ func NewStatelessComponent(ctx *pulumi.Context, name string, providerResource pu
 				MaximumRetryAttempts:     pulumi.Int(0),
 			},
 		},
-	}, pulumi.Parent(component), providerResource)
+	},
+		pulumi.Parent(component),
+		providerResource,
+	)
 	if err != nil {
 		return nil, err
 	}

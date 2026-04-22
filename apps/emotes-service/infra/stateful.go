@@ -12,10 +12,10 @@ type StatefulComponent struct {
 	TwitchEmotesSnapshotsTable *dynamodb.Table
 }
 
-func NewStatefulComponent(ctx *pulumi.Context, name string, providerResource pulumi.ResourceOption) (*StatefulComponent, error) {
+func NewStatefulComponent(ctx *pulumi.Context, providerResource pulumi.ResourceOption) (*StatefulComponent, error) {
 	component := &StatefulComponent{}
 
-	err := ctx.RegisterComponentResourceV2("emotes-service:index:StatefulComponent", name, nil, component)
+	err := ctx.RegisterComponentResourceV2("emotes-service:index:StatefulComponent", "stateful", nil, component)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +35,10 @@ func NewStatefulComponent(ctx *pulumi.Context, name string, providerResource pul
 			},
 		},
 		DeletionProtectionEnabled: pulumi.BoolPtr(stack.IsProduction(ctx.Stack())),
-	}, pulumi.Parent(component), providerResource)
+	},
+		pulumi.Parent(component),
+		providerResource,
+	)
 	if err != nil {
 		return nil, err
 	}
