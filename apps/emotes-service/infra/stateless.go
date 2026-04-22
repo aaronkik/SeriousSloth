@@ -28,7 +28,7 @@ func NewStatelessComponent(ctx *pulumi.Context, name string, providerResource pu
 	twitchClientId := appConfig.RequireSecret("twitch-client-id")
 	twitchClientSecret := appConfig.RequireSecret("twitch-client-secret")
 
-	_, err = ssm.NewParameter(ctx, "twitch-client-id", &ssm.ParameterArgs{
+	twitchClientIdParam, err := ssm.NewParameter(ctx, "twitch-client-id", &ssm.ParameterArgs{
 		Type:  pulumi.String(ssm.ParameterTypeSecureString),
 		Value: pulumi.StringInput(twitchClientId),
 	}, pulumi.Parent(component), providerResource)
@@ -36,7 +36,7 @@ func NewStatelessComponent(ctx *pulumi.Context, name string, providerResource pu
 		return nil, err
 	}
 
-	_, err = ssm.NewParameter(ctx, "twitch-client-secret", &ssm.ParameterArgs{
+	twitchClientSecretParam, err := ssm.NewParameter(ctx, "twitch-client-secret", &ssm.ParameterArgs{
 		Type:  pulumi.String(ssm.ParameterTypeSecureString),
 		Value: pulumi.StringInput(twitchClientSecret),
 	}, pulumi.Parent(component), providerResource)
@@ -49,12 +49,22 @@ func NewStatelessComponent(ctx *pulumi.Context, name string, providerResource pu
 			"bootstrap": pulumi.NewFileAsset("../dist/sync-global-emotes/bootstrap"),
 		}),
 		Environment: map[string]pulumi.StringInput{
-			"TWITCH_GLOBAL_EMOTES_ENDPOINT": pulumi.String(applicationConfig.Twitch.GlobalEmotesEndpoint),
-			"TWITCH_OAUTH_ENDPOINT":         pulumi.String(applicationConfig.Twitch.OauthEndpoint),
-			"TWITCH_CLIENT_ID":              pulumi.StringInput(twitchClientId),
-			"TWITCH_CLIENT_SECRET":          pulumi.StringInput(twitchClientSecret),
+			"TWITCH_GLOBAL_EMOTES_ENDPOINT":  pulumi.String(applicationConfig.Twitch.GlobalEmotesEndpoint),
+			"TWITCH_OAUTH_ENDPOINT":          pulumi.String(applicationConfig.Twitch.OauthEndpoint),
+			"TWITCH_CLIENT_ID_PARAM_ARN":     pulumi.StringInput(twitchClientIdParam.Arn),
+			"TWITCH_CLIENT_SECRET_PARAM_ARN": pulumi.StringInput(twitchClientSecretParam.Arn),
 		},
-	}, pulumi.Parent(component), providerResource)
+		PolicyStatements: iam.GetPolicyDocumentStatementArray{
+			&iam.GetPolicyDocumentStatementArgs{
+				Effect:  pulumi.String("Allow"),
+				Actions: pulumi.StringArray{pulumi.String("ssm:GetParameter")},
+				Resources: pulumi.StringArray{
+					twitchClientIdParam.Arn,
+					twitchClientSecretParam.Arn,
+				},
+			},
+		},
+	}, pulumi.Parent(component), providerResource, pulumi.DependsOn([]pulumi.Resource{twitchClientIdParam, twitchClientSecretParam}))
 	if err != nil {
 		return nil, err
 	}
