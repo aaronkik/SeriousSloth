@@ -41,7 +41,25 @@ func GetAccessToken() (string, error) {
 	return token.AccessToken, nil
 }
 
-func GetGlobalEmotes(accessToken string) (any, error) {
+type GlobalEmote struct {
+	Format []string `json:"format"`
+	ID     string   `json:"id"`
+	Images struct {
+		URL1X string `json:"url_1x"`
+		URL2X string `json:"url_2x"`
+		URL4X string `json:"url_4x"`
+	} `json:"images"`
+	Name      string   `json:"name"`
+	Scale     []string `json:"scale"`
+	ThemeMode []string `json:"theme_mode"`
+}
+
+type GlobalEmotesResponse struct {
+	Data     []GlobalEmote `json:"data"`
+	Template string        `json:"template"`
+}
+
+func GetGlobalEmotes(accessToken string) (GlobalEmotesResponse, error) {
 	client := &http.Client{
 		Timeout: time.Second * 10,
 	}
@@ -49,13 +67,13 @@ func GetGlobalEmotes(accessToken string) (any, error) {
 	req, err := http.NewRequest("GET", "https://api.twitch.tv/helix/chat/emotes/global", nil)
 	if err != nil {
 		slog.Error("Error creating global emotes request", "error", err)
-		return nil, err
+		return GlobalEmotesResponse{}, err
 	}
 
 	twitchClientId, err := parameter.GetSecret(environment.GetOrFatal("TWITCH_CLIENT_ID_PARAM_ARN"))
 	if err != nil {
 		slog.Error("Error getting client id", "error", err)
-		return "", err
+		return GlobalEmotesResponse{}, err
 	}
 
 	req.Header.Set("Client-ID", twitchClientId)
@@ -64,16 +82,16 @@ func GetGlobalEmotes(accessToken string) (any, error) {
 	resp, err := client.Do(req)
 	if err != nil {
 		slog.Error("Error getting global emotes", "error", err)
-		return nil, err
+		return GlobalEmotesResponse{}, err
 	}
 
 	defer resp.Body.Close()
 
-	globalEmotesResponse := map[string]interface{}{}
+	globalEmotesResponse := GlobalEmotesResponse{}
 	err = json.NewDecoder(resp.Body).Decode(&globalEmotesResponse)
 	if err != nil {
 		slog.Error("Error decoding global emotes response", "error", err)
-		return nil, err
+		return GlobalEmotesResponse{}, err
 	}
 
 	slog.Info("Got global emotes", "body", globalEmotesResponse)
