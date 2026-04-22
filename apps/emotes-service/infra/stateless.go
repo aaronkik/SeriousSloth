@@ -7,7 +7,9 @@ import (
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws"
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/iam"
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/scheduler"
+	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/ssm"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 )
 
 type StatelessComponent struct {
@@ -22,6 +24,26 @@ func NewStatelessComponent(ctx *pulumi.Context, name string, providerResource pu
 		return nil, err
 	}
 
+	appConfig := config.New(ctx, "app")
+	twitchClientId := appConfig.RequireSecret("twitch-client-id")
+	twitchClientSecret := appConfig.RequireSecret("twitch-client-secret")
+
+	_, err = ssm.NewParameter(ctx, "twitch-client-id", &ssm.ParameterArgs{
+		Type:  pulumi.String(ssm.ParameterTypeSecureString),
+		Value: pulumi.StringInput(twitchClientId),
+	}, pulumi.Parent(component), providerResource)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = ssm.NewParameter(ctx, "twitch-client-secret", &ssm.ParameterArgs{
+		Type:  pulumi.String(ssm.ParameterTypeSecureString),
+		Value: pulumi.StringInput(twitchClientSecret),
+	}, pulumi.Parent(component), providerResource)
+	if err != nil {
+		return nil, err
+	}
+
 	syncGlobalEmotesLambda, err := components.NewLambda(ctx, "sync-global-emotes", &components.LambdaArgs{
 		Code: pulumi.NewAssetArchive(map[string]interface{}{
 			"bootstrap": pulumi.NewFileAsset("../dist/sync-global-emotes/bootstrap"),
@@ -29,6 +51,8 @@ func NewStatelessComponent(ctx *pulumi.Context, name string, providerResource pu
 		Environment: map[string]pulumi.StringInput{
 			"TWITCH_GLOBAL_EMOTES_ENDPOINT": pulumi.String(applicationConfig.Twitch.GlobalEmotesEndpoint),
 			"TWITCH_OAUTH_ENDPOINT":         pulumi.String(applicationConfig.Twitch.OauthEndpoint),
+			"TWITCH_CLIENT_ID":              pulumi.StringInput(twitchClientId),
+			"TWITCH_CLIENT_SECRET":          pulumi.StringInput(twitchClientSecret),
 		},
 	}, pulumi.Parent(component), providerResource)
 	if err != nil {
