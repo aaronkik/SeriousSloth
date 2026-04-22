@@ -109,7 +109,7 @@ func NewStatelessComponent(ctx *pulumi.Context, name string, providerResource pu
 				},
 			},
 		}).Json(),
-	}, pulumi.Parent(component), pulumi.DependsOn([]pulumi.Resource{syncGlobalEmotesLambda}))
+	}, pulumi.Parent(component), providerResource, pulumi.DependsOn([]pulumi.Resource{syncGlobalEmotesLambda}))
 	if err != nil {
 		return nil, err
 	}
