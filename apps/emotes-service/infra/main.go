@@ -1,10 +1,11 @@
 package main
 
 import (
-	"emotes-service/infra/git"
-	"emotes-service/infra/stack"
 	"strings"
 	"time"
+
+	"emotes-service/infra/git"
+	"emotes-service/infra/stack"
 
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws"
 	"github.com/pulumi/pulumi-pulumiservice/sdk/go/pulumiservice"
