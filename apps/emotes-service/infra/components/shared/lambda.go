@@ -11,10 +11,11 @@ import (
 )
 
 type LambdaArgs struct {
-	Code        pulumi.ArchiveInput
-	MemorySize  pulumi.IntPtrInput
-	Timeout     pulumi.IntPtrInput
-	Environment pulumi.StringMap
+	Code             pulumi.ArchiveInput
+	MemorySize       pulumi.IntPtrInput
+	Timeout          pulumi.IntPtrInput
+	Environment      pulumi.StringMap
+	PolicyStatements iam.GetPolicyDocumentStatementArray
 }
 
 type Lambda struct {
@@ -68,21 +69,24 @@ func NewLambda(ctx *pulumi.Context, name string, args *LambdaArgs, opts ...pulum
 		return nil, err
 	}
 
-	_, err = iam.NewRolePolicy(ctx, fmt.Sprintf("%s-log-policy", name), &iam.RolePolicyArgs{
+	policyStatements := iam.GetPolicyDocumentStatementArray{
+		&iam.GetPolicyDocumentStatementArgs{
+			Effect: pulumi.String("Allow"),
+			Actions: pulumi.StringArray{
+				pulumi.String("logs:CreateLogStream"),
+				pulumi.String("logs:PutLogEvents"),
+			},
+			Resources: pulumi.StringArray{
+				pulumi.Sprintf("%s:*", lambdaLogGroup.Arn),
+			},
+		},
+	}
+	policyStatements = append(policyStatements, args.PolicyStatements...)
+
+	_, err = iam.NewRolePolicy(ctx, fmt.Sprintf("%s-policy", name), &iam.RolePolicyArgs{
 		Role: lambdaRole.Name,
 		Policy: iam.GetPolicyDocumentOutput(ctx, iam.GetPolicyDocumentOutputArgs{
-			Statements: iam.GetPolicyDocumentStatementArray{
-				&iam.GetPolicyDocumentStatementArgs{
-					Effect: pulumi.String("Allow"),
-					Actions: pulumi.StringArray{
-						pulumi.String("logs:CreateLogStream"),
-						pulumi.String("logs:PutLogEvents"),
-					},
-					Resources: pulumi.StringArray{
-						pulumi.Sprintf("%s:*", lambdaLogGroup.Arn),
-					},
-				},
-			},
+			Statements: policyStatements,
 		}).Json(),
 	}, pulumi.Parent(component), pulumi.DependsOn([]pulumi.Resource{lambdaLogGroup}))
 	if err != nil {
