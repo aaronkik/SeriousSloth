@@ -2,7 +2,6 @@ package components
 
 import (
 	"emotes-service/infra/stack"
-	"encoding/json"
 	"fmt"
 
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/cloudwatch"
@@ -50,25 +49,20 @@ func NewLambda(ctx *pulumi.Context, name string, args *LambdaArgs, opts ...pulum
 		return nil, err
 	}
 
-	assumeRolePolicy, err := iam.GetPolicyDocument(ctx, &iam.GetPolicyDocumentArgs{
-		Statements: []iam.GetPolicyDocumentStatement{
-			{
-				Actions: []string{"sts:AssumeRole"},
-				Principals: []iam.GetPolicyDocumentStatementPrincipal{
-					{
-						Type:        "Service",
-						Identifiers: []string{"lambda.amazonaws.com"},
+	lambdaRole, err := iam.NewRole(ctx, fmt.Sprintf("%s-role", name), &iam.RoleArgs{
+		AssumeRolePolicy: iam.GetPolicyDocumentOutput(ctx, iam.GetPolicyDocumentOutputArgs{
+			Statements: iam.GetPolicyDocumentStatementArray{
+				&iam.GetPolicyDocumentStatementArgs{
+					Actions: pulumi.StringArray{pulumi.String("sts:AssumeRole")},
+					Principals: iam.GetPolicyDocumentStatementPrincipalArray{
+						&iam.GetPolicyDocumentStatementPrincipalArgs{
+							Type:        pulumi.String("Service"),
+							Identifiers: pulumi.StringArray{pulumi.String("lambda.amazonaws.com")},
+						},
 					},
 				},
 			},
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	lambdaRole, err := iam.NewRole(ctx, fmt.Sprintf("%s-role", name), &iam.RoleArgs{
-		AssumeRolePolicy: pulumi.String(assumeRolePolicy.Json),
+		}).Json(),
 	}, pulumi.Parent(component))
 	if err != nil {
 		return nil, err
@@ -76,27 +70,20 @@ func NewLambda(ctx *pulumi.Context, name string, args *LambdaArgs, opts ...pulum
 
 	_, err = iam.NewRolePolicy(ctx, fmt.Sprintf("%s-log-policy", name), &iam.RolePolicyArgs{
 		Role: lambdaRole.Name,
-		Policy: lambdaLogGroup.Arn.ApplyT(func(arn string) (string, error) {
-			policy := map[string]interface{}{
-				"Version": "2012-10-17",
-				"Statement": []map[string]interface{}{
-					{
-						"Effect": "Allow",
-						"Action": []string{
-							"logs:CreateLogStream",
-							"logs:PutLogEvents",
-						},
-						"Resource": []string{fmt.Sprintf("%s:*", arn)},
+		Policy: iam.GetPolicyDocumentOutput(ctx, iam.GetPolicyDocumentOutputArgs{
+			Statements: iam.GetPolicyDocumentStatementArray{
+				&iam.GetPolicyDocumentStatementArgs{
+					Effect: pulumi.String("Allow"),
+					Actions: pulumi.StringArray{
+						pulumi.String("logs:CreateLogStream"),
+						pulumi.String("logs:PutLogEvents"),
+					},
+					Resources: pulumi.StringArray{
+						pulumi.Sprintf("%s:*", lambdaLogGroup.Arn),
 					},
 				},
-			}
-			policyJSON, marshallError := json.Marshal(policy)
-			if marshallError != nil {
-				return "", marshallError
-			}
-
-			return string(policyJSON), nil
-		}).(pulumi.StringOutput),
+			},
+		}).Json(),
 	}, pulumi.Parent(component), pulumi.DependsOn([]pulumi.Resource{lambdaLogGroup}))
 	if err != nil {
 		return nil, err
