@@ -160,6 +160,11 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 		return nil, err
 	}
 
+	schedulerState := "ENABLED"
+	if stack.IsEphemeral(ctx.Stack()) {
+		schedulerState = "DISABLED"
+	}
+
 	_, err = scheduler.NewSchedule(ctx, "sync-global-emotes-scheduler", &scheduler.ScheduleArgs{
 		ActionAfterCompletion: pulumi.String("NONE"),
 		FlexibleTimeWindow: &scheduler.ScheduleFlexibleTimeWindowArgs{
@@ -167,7 +172,7 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 		},
 		ScheduleExpression:         pulumi.String("cron(0 * * * ? *)"),
 		ScheduleExpressionTimezone: pulumi.String("UTC"),
-		State:                      pulumi.String("ENABLED"),
+		State:                      pulumi.String(schedulerState),
 		Target: &scheduler.ScheduleTargetArgs{
 			Arn:     pulumi.StringInput(syncGlobalEmotesLambda.Function.Arn),
 			RoleArn: pulumi.StringInput(syncGlobalEmotesSchedulerRole.Arn),
