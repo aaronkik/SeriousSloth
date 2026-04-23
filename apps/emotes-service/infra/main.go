@@ -1,11 +1,11 @@
 package main
 
 import (
-	"strings"
-	"time"
-
+	"emotes-service/infra/components"
 	"emotes-service/infra/git"
 	"emotes-service/infra/stack"
+	"strings"
+	"time"
 
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws"
 	"github.com/pulumi/pulumi-pulumiservice/sdk/go/pulumiservice"
@@ -84,12 +84,12 @@ func main() {
 
 		appConfig := stack.GetApplicationConfig()
 
-		statefulComponent, err := NewStatefulComponent(ctx, providerResource)
+		statefulComponent, err := components.NewStatefulComponent(ctx, providerResource)
 		if err != nil {
 			return err
 		}
 
-		_, err = NewStatelessComponent(ctx, providerResource, appConfig, StatefulResource{twitchEmotesSnapshotsTable: statefulComponent.TwitchEmotesSnapshotsTable})
+		_, err = components.NewStatelessComponent(ctx, providerResource, appConfig, components.StatefulResource{TwitchEmotesSnapshotsTable: statefulComponent.TwitchEmotesSnapshotsTable})
 		if err != nil {
 			return err
 		}
