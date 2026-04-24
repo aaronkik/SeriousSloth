@@ -7,6 +7,7 @@ import (
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws"
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/dynamodb"
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/iam"
+	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/lambda"
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/scheduler"
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/ssm"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
@@ -15,6 +16,7 @@ import (
 
 type StatelessComponent struct {
 	pulumi.ResourceState
+	SyncGlobalEmotesFunction *lambda.Function
 }
 
 type StatefulResource struct {
@@ -61,8 +63,8 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 		}),
 		Environment: map[string]pulumi.StringInput{
 			"TWITCH_EMOTES_SNAPSHOT_TABLE":   pulumi.StringInput(statefulResource.TwitchEmotesSnapshotsTable.Name),
-			"TWITCH_GLOBAL_EMOTES_ENDPOINT":  pulumi.String(applicationConfig.Twitch.GlobalEmotesEndpoint),
-			"TWITCH_OAUTH_ENDPOINT":          pulumi.String(applicationConfig.Twitch.OauthEndpoint),
+			"TWITCH_GLOBAL_EMOTES_ENDPOINT":  applicationConfig.Twitch.GlobalEmotesEndpoint,
+			"TWITCH_OAUTH_ENDPOINT":          applicationConfig.Twitch.OauthEndpoint,
 			"TWITCH_CLIENT_ID_PARAM_ARN":     pulumi.StringInput(twitchClientIdParam.Arn),
 			"TWITCH_CLIENT_SECRET_PARAM_ARN": pulumi.StringInput(twitchClientSecretParam.Arn),
 		},
@@ -94,6 +96,8 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 	if err != nil {
 		return nil, err
 	}
+
+	component.SyncGlobalEmotesFunction = syncGlobalEmotesLambda.Function
 
 	caller, err := aws.GetCallerIdentity(ctx, nil, nil)
 	if err != nil {

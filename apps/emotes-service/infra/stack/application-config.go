@@ -1,8 +1,10 @@
 package stack
 
+import "github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+
 type TwitchConfig struct {
-	OauthEndpoint        string
-	GlobalEmotesEndpoint string
+	OauthEndpoint        pulumi.StringInput
+	GlobalEmotesEndpoint pulumi.StringInput
 }
 
 type ApplicationConfig struct {
@@ -11,8 +13,8 @@ type ApplicationConfig struct {
 
 var applicationConfig = ApplicationConfig{
 	Twitch: TwitchConfig{
-		OauthEndpoint:        "https://id.twitch.tv/oauth2/token",
-		GlobalEmotesEndpoint: "https://api.twitch.tv/helix/chat/emotes/global",
+		OauthEndpoint:        pulumi.String("https://id.twitch.tv/oauth2/token"),
+		GlobalEmotesEndpoint: pulumi.String("https://api.twitch.tv/helix/chat/emotes/global"),
 	},
 }
 
