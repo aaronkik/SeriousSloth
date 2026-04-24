@@ -84,14 +84,31 @@ func main() {
 
 		appConfig := stack.GetApplicationConfig()
 
+		var integrationComponent *components.IntegrationComponent
+		if stack.IsEphemeral(ctx.Stack()) {
+			integrationComponent, err = components.NewIntegrationComponent(ctx, providerResource)
+			if err != nil {
+				return err
+			}
+
+			appConfig.Twitch.OauthEndpoint = pulumi.Sprintf("%soauth2/token", integrationComponent.MockTwitchApiUrl)
+			appConfig.Twitch.GlobalEmotesEndpoint = pulumi.Sprintf("%shelix/chat/emotes/global", integrationComponent.MockTwitchApiUrl)
+		}
+
 		statefulComponent, err := components.NewStatefulComponent(ctx, providerResource)
 		if err != nil {
 			return err
 		}
 
-		_, err = components.NewStatelessComponent(ctx, providerResource, appConfig, components.StatefulResource{TwitchEmotesSnapshotsTable: statefulComponent.TwitchEmotesSnapshotsTable})
+		statelessComponent, err := components.NewStatelessComponent(ctx, providerResource, appConfig, components.StatefulResource{TwitchEmotesSnapshotsTable: statefulComponent.TwitchEmotesSnapshotsTable})
 		if err != nil {
 			return err
+		}
+
+		if integrationComponent != nil {
+			ctx.Export("syncGlobalEmotesLambdaName", statelessComponent.SyncGlobalEmotesFunction.Name)
+			ctx.Export("twitchEmotesSnapshotsTableName", statefulComponent.TwitchEmotesSnapshotsTable.Name)
+			ctx.Export("mockTwitchResponsesTableName", integrationComponent.MockTwitchResponsesTable.Name)
 		}
 
 		return nil
