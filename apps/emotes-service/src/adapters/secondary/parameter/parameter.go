@@ -20,8 +20,8 @@ func init() {
 	ssmClient = ssm.NewFromConfig(cfg)
 }
 
-func GetSecret(nameOrArn string) (string, error) {
-	output, err := ssmClient.GetParameter(context.TODO(),
+func GetSecret(ctx context.Context, nameOrArn string) (string, error) {
+	output, err := ssmClient.GetParameter(ctx,
 		&ssm.GetParameterInput{
 			Name:           aws.String(nameOrArn),
 			WithDecryption: aws.Bool(true),

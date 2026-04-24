@@ -16,12 +16,12 @@ import (
 func handler(ctx context.Context, event events.CloudWatchEvent) error {
 	slog.InfoContext(ctx, "canonical log", "event", event)
 
-	accessToken, err := twitch.GetAccessToken()
+	accessToken, err := twitch.GetAccessToken(ctx)
 	if err != nil {
 		return err
 	}
 
-	globalEmotes, err := twitch.GetGlobalEmotes(accessToken)
+	globalEmotes, err := twitch.GetGlobalEmotes(ctx, accessToken)
 	if err != nil {
 		return err
 	}

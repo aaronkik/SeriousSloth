@@ -13,14 +13,14 @@ import (
 	"golang.org/x/oauth2/clientcredentials"
 )
 
-func GetAccessToken() (string, error) {
-	twitchClientId, err := parameter.GetSecret(environment.GetOrFatal("TWITCH_CLIENT_ID_PARAM_ARN"))
+func GetAccessToken(ctx context.Context) (string, error) {
+	twitchClientId, err := parameter.GetSecret(ctx, environment.GetOrFatal("TWITCH_CLIENT_ID_PARAM_ARN"))
 	if err != nil {
 		slog.Error("Error getting client id", "error", err)
 		return "", err
 	}
 
-	twitchClientSecret, err := parameter.GetSecret(environment.GetOrFatal("TWITCH_CLIENT_SECRET_PARAM_ARN"))
+	twitchClientSecret, err := parameter.GetSecret(ctx, environment.GetOrFatal("TWITCH_CLIENT_SECRET_PARAM_ARN"))
 	if err != nil {
 		slog.Error("Error getting client secret", "error", err)
 		return "", err
@@ -59,7 +59,7 @@ type GlobalEmotesResponse struct {
 	Template string                   `json:"template"`
 }
 
-func GetGlobalEmotes(accessToken string) ([]map[string]interface{}, error) {
+func GetGlobalEmotes(ctx context.Context, accessToken string) ([]map[string]interface{}, error) {
 	client := &http.Client{
 		Timeout: time.Second * 10,
 	}
@@ -70,7 +70,7 @@ func GetGlobalEmotes(accessToken string) ([]map[string]interface{}, error) {
 		return nil, err
 	}
 
-	twitchClientId, err := parameter.GetSecret(environment.GetOrFatal("TWITCH_CLIENT_ID_PARAM_ARN"))
+	twitchClientId, err := parameter.GetSecret(ctx, environment.GetOrFatal("TWITCH_CLIENT_ID_PARAM_ARN"))
 	if err != nil {
 		slog.Error("Error getting client id", "error", err)
 		return nil, err
