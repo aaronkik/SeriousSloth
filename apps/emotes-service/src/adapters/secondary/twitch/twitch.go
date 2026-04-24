@@ -64,7 +64,7 @@ func GetGlobalEmotes(accessToken string) ([]map[string]interface{}, error) {
 		Timeout: time.Second * 10,
 	}
 
-	req, err := http.NewRequest("GET", "https://api.twitch.tv/helix/chat/emotes/global", nil)
+	req, err := http.NewRequest("GET", environment.GetOrFatal("TWITCH_GLOBAL_EMOTES_ENDPOINT"), nil)
 	if err != nil {
 		slog.Error("Error creating global emotes request", "error", err)
 		return nil, err
