@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "echo 'Add dev script here'",
     "build": "./scripts/build.sh",
-    "test": "echo 'Add test script here'",
+    "test": "go test ./...",
+    "test:ci": "go test ./...",
     "test:integration": "go test -tags integration -v -count=1 ./src/tests/integration/...",
     "lint": "gofmt -w .",
     "local:create": "STACK_NAME=$(./scripts/stack-name.sh) && pulumi stack init $STACK_NAME && pulumi config env add emotes-service/local-dev -s $STACK_NAME --yes && pulumi config env add emotes-service/twitch-credentials -s $STACK_NAME --yes && pulumi config set app:stage $STACK_NAME -s $STACK_NAME",
