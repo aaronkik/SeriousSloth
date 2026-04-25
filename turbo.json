@@ -17,16 +17,19 @@
     "test:ci": {
       "dependsOn": ["^build"]
     },
-    "local:create": {
+    "create": {
       "cache": false
     },
-    "local:up": {
+    "deploy": {
       "cache": false
     },
-    "local:preview": {
+    "preview": {
       "cache": false
     },
-    "local:destroy": {
+    "destroy:local": {
+      "cache": false
+    },
+    "destroy:ci": {
       "cache": false
     }
   }

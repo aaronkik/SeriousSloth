@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+env:
+  # https://www.pulumi.com/docs/iac/cli/environment-variables/
+  PULUMI_STACK:
+    sh: ./scripts/stack-name.sh
+
+tasks:
+  build:
+    cmd: ./scripts/build.sh
+
+  create:
+    desc: Creates a local stack in pulumi with ESC values
+    cmds:
+      - pulumi stack init -s $PULUMI_STACK
+      - pulumi config env add emotes-service/local-dev --yes
+      - pulumi config env add emotes-service/twitch-credentials --yes
+
+  preview:
+    desc: Preview any stack changes
+    deps:
+      - build
+    cmds:
+      - pulumi preview
+
+  deploy:
+    desc: Deploys IaC
+    deps:
+      - build
+    cmds:
+      - pulumi up --yes
+
+  destroy:ci:
+    desc: Teardown a stack from Pulumi and AWS without prompt
+    cmds:
+      - pulumi destroy --yes
+      - pulumi stack rm $PULUMI_STACK --yes
+
+  destroy:local:
+    desc: Teardown a stack from Pulumi and AWS
+    interactive: true
+    cmds:
+      - pulumi destroy
+      - pulumi stack rm $PULUMI_STACK

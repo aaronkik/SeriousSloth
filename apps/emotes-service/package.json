@@ -3,15 +3,15 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "echo 'Add dev script here'",
-    "build": "./scripts/build.sh",
+    "build": "task build",
     "test": "go test ./...",
     "test:ci": "go test ./...",
     "test:integration": "go test -tags integration -v -count=1 ./src/tests/integration/...",
     "lint": "gofmt -w .",
-    "local:create": "STACK_NAME=$(./scripts/stack-name.sh) && pulumi stack init $STACK_NAME && pulumi config env add emotes-service/local-dev -s $STACK_NAME --yes && pulumi config env add emotes-service/twitch-credentials -s $STACK_NAME --yes && pulumi config set app:stage $STACK_NAME -s $STACK_NAME",
-    "local:up": "STACK_NAME=$(./scripts/stack-name.sh) && ./scripts/build.sh && pulumi up -s $STACK_NAME --yes",
-    "local:preview": "STACK_NAME=$(./scripts/stack-name.sh) && ./scripts/build.sh && pulumi preview -s $STACK_NAME",
-    "local:destroy": "STACK_NAME=$(./scripts/stack-name.sh) && pulumi destroy -s $STACK_NAME --yes && pulumi stack rm $STACK_NAME --yes"
+    "create": "task create",
+    "preview": "task preview",
+    "deploy": "task deploy",
+    "destroy:local": "task destroy:local",
+    "destroy:ci": "task destroy:ci"
   }
 }
