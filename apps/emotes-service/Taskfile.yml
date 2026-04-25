@@ -44,3 +44,15 @@ tasks:
     cmds:
       - pulumi destroy
       - pulumi stack rm $PULUMI_STACK
+
+  lint:
+    cmd: gofmt -w .
+
+  test:unit:
+    cmd: go test ./...
+
+  test:integration:
+    cmd: go test -tags integration -v -count=1 ./src/tests/integration/...
+
+  test:ci:
+    cmd: go test -tags integration -v -count=1 ./...
