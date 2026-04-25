@@ -14,7 +14,10 @@ tasks:
   create:
     desc: Creates a stack in pulumi with ESC values
     cmds:
-      - pulumi stack init -s $PULUMI_STACK
+      - |
+        if ! pulumi stack select -s $PULUMI_STACK 2>/dev/null; then                                                   
+          pulumi stack init -s $PULUMI_STACK
+        fi
       - pulumi config env add emotes-service/dev --yes
       - pulumi config env add emotes-service/twitch-credentials --yes
 
