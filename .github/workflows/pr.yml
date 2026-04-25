@@ -51,5 +51,6 @@ jobs:
         with:
           organization: aaronkik
           requested-token-type: urn:pulumi:token-type:access_token:personal
+          scope: user:aaronkik
 #      - name: Check affected tests
 #        run: turbo run test:ci --affected
