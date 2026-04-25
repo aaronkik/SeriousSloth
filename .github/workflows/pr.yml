@@ -4,14 +4,13 @@ on: [pull_request]
 
 env:
   DO_NOT_TRACK: 1
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ vars.TURBO_TEAM }}
 
 jobs:
   ci:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    env:
-      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
