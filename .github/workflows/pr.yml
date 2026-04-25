@@ -12,6 +12,7 @@ env:
   DO_NOT_TRACK: 1
   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
   TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+  TURBO_SCM_BASE: origin/${{ github.base_ref }}
 
 jobs:
   lint-build:
