@@ -12,7 +12,7 @@ tasks:
     cmd: ./scripts/build.sh
 
   create:
-    desc: Creates a local stack in pulumi with ESC values
+    desc: Creates a stack in pulumi with ESC values
     cmds:
       - pulumi stack init -s $PULUMI_STACK
       - pulumi config env add emotes-service/local-dev --yes
