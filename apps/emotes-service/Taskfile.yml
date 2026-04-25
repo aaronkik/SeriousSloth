@@ -15,7 +15,7 @@ tasks:
     desc: Creates a stack in pulumi with ESC values
     cmds:
       - pulumi stack init -s $PULUMI_STACK
-      - pulumi config env add emotes-service/local-dev --yes
+      - pulumi config env add emotes-service/dev --yes
       - pulumi config env add emotes-service/twitch-credentials --yes
 
   preview:
