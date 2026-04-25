@@ -55,8 +55,7 @@ tasks:
     cmd: go test -tags integration -v -count=1 ./src/tests/integration/...
 
   test:ci:
-    deps:
-      - create
-      - deploy
     cmds:
+      - task: create
+      - task: deploy
       - go test -tags integration -v -count=1 ./...
