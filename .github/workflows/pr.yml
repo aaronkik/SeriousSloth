@@ -6,7 +6,7 @@ env:
   DO_NOT_TRACK: 1
 
 jobs:
-  test:
+  ci:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
