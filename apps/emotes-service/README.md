@@ -18,13 +18,19 @@ Ephemeral stacks use [Pulumi ESC](https://www.pulumi.com/docs/esc/).
 ```bash
 # Create your ephemeral stack (one-time)
 task create
+```
 
+```sh
 # Preview infrastructure changes
 task preview
+```
 
+```sh
 # Deploy
 task deploy
+```
 
+```sh
 # Tear down and remove stack
 task destroy:local
 ```
