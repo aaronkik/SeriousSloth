@@ -4,6 +4,9 @@
   "tasks": {
     "build": {
       "outputs": ["dist/**"]
+    },
+    "test:ci": {
+      "env": ["PULUMI_ACCESS_TOKEN"]
     }
   }
 }

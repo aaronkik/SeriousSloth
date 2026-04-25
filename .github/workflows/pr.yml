@@ -55,3 +55,5 @@ jobs:
           scope: user:aaronkik
       - name: Check affected tests
         run: turbo run test:ci --affected
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
