@@ -1,0 +1,17 @@
+{
+  "name": "emotes-service",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "task build",
+    "test": "task test:unit",
+    "test:ci": "task test:ci",
+    "test:integration": "task test:integration",
+    "lint": "task lint",
+    "create": "task create",
+    "preview": "task preview",
+    "deploy": "task deploy",
+    "destroy:local": "task destroy:local",
+    "destroy:ci": "task destroy:ci"
+  }
+}
