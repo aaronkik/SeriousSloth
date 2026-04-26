@@ -24,10 +24,10 @@
       "cache": false
     },
     "deploy:staging": {
-      "cache": false
+      "cache": true
     },
     "deploy:prod": {
-      "cache": false
+      "cache": true
     },
     "preview": {
       "cache": false
