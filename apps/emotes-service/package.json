@@ -11,6 +11,8 @@
     "create": "task create",
     "preview": "task preview",
     "deploy": "task deploy",
+    "deploy:staging": "task deploy:staging",
+    "deploy:prod": "task deploy:prod",
     "destroy:local": "task destroy:local",
     "destroy:ci": "task destroy:ci"
   }
