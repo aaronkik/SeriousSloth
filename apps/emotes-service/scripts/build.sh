@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-HANDLERS_DIR="src/adapters/primary"
+HANDLERS_DIR="src/use-cases"
 DIST_DIR="dist"
 
 rm -rf "$DIST_DIR"
