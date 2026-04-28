@@ -40,20 +40,7 @@ jobs:
           organization: aaronkik
           requested-token-type: urn:pulumi:token-type:access_token:personal
           scope: user:aaronkik
-      - name: Check stack exists
-        id: stack
-        working-directory: apps/emotes-service
-        run: |
-          if pulumi stack select -s "${CI_STACK_NAME}" 2>/dev/null; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "No Pulumi stack ${CI_STACK_NAME} found; nothing to destroy."
-          fi
-        env:
-          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
       - name: Destroy stack
-        if: steps.stack.outputs.exists == 'true'
         run: turbo run destroy:ci --filter=emotes-service
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
