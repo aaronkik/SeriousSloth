@@ -80,8 +80,10 @@ tasks:
       - pulumi up --yes
 
   destroy:ci:
-    desc: Teardown a stack from Pulumi and AWS without prompt
+    desc: Teardown a stack from Pulumi and AWS without prompt; no-op if stack absent
+    if: 'pulumi stack select -s "$PULUMI_STACK" 2>/dev/null'
     cmds:
+      - pulumi config env add emotes-service/dev --yes
       - pulumi destroy --yes
       - pulumi stack rm $PULUMI_STACK --yes
 
