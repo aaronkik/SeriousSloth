@@ -1,5 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalEnv": ["PR_NUMBER"],
   "tasks": {
     "build": {
       "env": ["NEXT_PUBLIC_TWITCH_CLIENT_ID", "TWITCH_CLIENT_SECRET"]
