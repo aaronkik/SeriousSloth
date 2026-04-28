@@ -1,8 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-if [[ "${CI:-}" == "true" && "${GITHUB_REF:-}" =~ ^refs/pull/([0-9]+)/ ]]; then
-  echo "pr-${BASH_REMATCH[1]}"
+# PR_NUMBER is set in CI environments
+if [[ -n "${PR_NUMBER:-}" ]]; then
+  echo "pr-${PR_NUMBER}"
   exit 0
 fi
 
