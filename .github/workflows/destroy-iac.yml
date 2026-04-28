@@ -4,6 +4,13 @@ on:
   pull_request:
     types: [closed]
 
+  workflow_dispatch:
+    inputs:
+      stack_name:
+        description: Pulumi stack name to destroy (e.g. pr-42)
+        required: true
+        type: string
+
 permissions:
   id-token: write
   contents: read
@@ -12,7 +19,7 @@ env:
   DO_NOT_TRACK: 1
   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
   TURBO_TEAM: ${{ vars.TURBO_TEAM }}
-  PR_NUMBER: ${{ github.event.pull_request.number }}
+  CI_STACK_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.stack_name || format('pr-{0}', github.event.pull_request.number) }}
 
 jobs:
   destroy:
@@ -37,15 +44,15 @@ jobs:
         id: stack
         working-directory: apps/emotes-service
         run: |
-          if pulumi stack select -s "pr-${PR_NUMBER}" 2>/dev/null; then
+          if pulumi stack select -s "${CI_STACK_NAME}" 2>/dev/null; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "No Pulumi stack pr-${PR_NUMBER} found; nothing to destroy."
+            echo "No Pulumi stack ${CI_STACK_NAME} found; nothing to destroy."
           fi
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-      - name: Destroy PR stack
+      - name: Destroy stack
         if: steps.stack.outputs.exists == 'true'
         run: turbo run destroy:ci --filter=emotes-service
         env:

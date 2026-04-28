@@ -12,7 +12,7 @@
         "AWS_SESSION_TOKEN",
         "AWS_REGION",
         "PULUMI_ACCESS_TOKEN",
-        "PR_NUMBER"
+        "CI_STACK_NAME"
       ]
     },
     "deploy:staging": {
@@ -41,7 +41,7 @@
         "AWS_SESSION_TOKEN",
         "AWS_REGION",
         "PULUMI_ACCESS_TOKEN",
-        "PR_NUMBER"
+        "CI_STACK_NAME"
       ]
     }
   }

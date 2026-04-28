@@ -16,7 +16,7 @@ env:
   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
   TURBO_TEAM: ${{ vars.TURBO_TEAM }}
   TURBO_SCM_BASE: origin/${{ github.base_ref }}
-  PR_NUMBER: ${{ github.event.pull_request.number }}
+  CI_STACK_NAME: pr-${{ github.event.pull_request.number }}
 
 jobs:
   lint-build:

@@ -1,9 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-# PR_NUMBER is set in CI environments
-if [[ -n "${PR_NUMBER:-}" ]]; then
-  echo "pr-${PR_NUMBER}"
+# CI_STACK_NAME is set by CI workflows.
+if [[ -n "${CI_STACK_NAME:-}" ]]; then
+  echo "${CI_STACK_NAME}"
   exit 0
 fi
 
