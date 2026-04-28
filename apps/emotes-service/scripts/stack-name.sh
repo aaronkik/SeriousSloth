@@ -1,8 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-if [[ "${CI:-}" == "true" && "${GITHUB_REF:-}" =~ ^refs/pull/([0-9]+)/ ]]; then
-  echo "pr-${BASH_REMATCH[1]}"
+# CI_STACK_NAME is set by CI workflows.
+if [[ -n "${CI_STACK_NAME:-}" ]]; then
+  echo "${CI_STACK_NAME}"
   exit 0
 fi
 

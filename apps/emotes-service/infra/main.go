@@ -5,7 +5,6 @@ import (
 	"emotes-service/infra/git"
 	"emotes-service/infra/stack"
 	"strings"
-	"time"
 
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws"
 	"github.com/pulumi/pulumi-pulumiservice/sdk/go/pulumiservice"
@@ -21,7 +20,7 @@ func main() {
 			return err
 		}
 
-		deploymentSettings, err := pulumiservice.NewDeploymentSettings(ctx, "deployment-settings-resource", &pulumiservice.DeploymentSettingsArgs{
+		_, err = pulumiservice.NewDeploymentSettings(ctx, "deployment-settings-resource", &pulumiservice.DeploymentSettingsArgs{
 			Organization: pulumi.String(ctx.Organization()),
 			Project:      pulumi.String(ctx.Project()),
 			Stack:        pulumi.String(ctx.Stack()),
@@ -43,22 +42,6 @@ func main() {
 		})
 		if err != nil {
 			return err
-		}
-
-		now := time.Now().UTC()
-		daysUntilSunday := (7 - int(now.Weekday())) % 7
-		stackDestruction := time.Date(now.Year(), now.Month(), now.Day()+daysUntilSunday, 23, 59, 59, 0, time.UTC)
-
-		if stack.IsEphemeral(ctx.Stack()) {
-			_, err = pulumiservice.NewTtlSchedule(ctx, "ttl-schedule", &pulumiservice.TtlScheduleArgs{
-				Organization: pulumi.String(ctx.Organization()),
-				Project:      pulumi.String(ctx.Project()),
-				Stack:        pulumi.String(ctx.Stack()),
-				Timestamp:    pulumi.String(stackDestruction.UTC().Format(time.RFC3339)),
-			}, pulumi.DependsOn([]pulumi.Resource{deploymentSettings}))
-			if err != nil {
-				return err
-			}
 		}
 
 		awsConfig := config.New(ctx, "aws")
