@@ -26,7 +26,7 @@ func handler(ctx context.Context, event events.CloudWatchEvent) error {
 		return err
 	}
 
-	err = dynamodb.PutItem(dynamodb.PutItemInput{
+	err = dynamodb.PutItem(ctx, dynamodb.PutItemInput{
 		TableName:  environment.GetOrFatal("TWITCH_EMOTES_SNAPSHOT_TABLE"),
 		PK:         "GLOBAL",
 		SK:         new(time.Now().UTC().Format(time.RFC3339)),

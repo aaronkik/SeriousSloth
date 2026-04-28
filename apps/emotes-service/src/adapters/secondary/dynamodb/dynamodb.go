@@ -28,7 +28,7 @@ type PutItemInput struct {
 	Attributes any
 }
 
-func PutItem(input PutItemInput) error {
+func PutItem(ctx context.Context, input PutItemInput) error {
 	item, err := attributevalue.MarshalMap(input.Attributes)
 	if err != nil {
 		slog.Error("Error marshalling item", "error", err)
@@ -40,7 +40,7 @@ func PutItem(input PutItemInput) error {
 		item["SK"] = &types.AttributeValueMemberS{Value: *input.SK}
 	}
 
-	_, err = client.PutItem(context.TODO(), &dynamodb.PutItemInput{
+	_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
 		TableName: &input.TableName,
 		Item:      item,
 	})
