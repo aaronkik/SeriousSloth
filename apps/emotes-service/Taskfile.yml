@@ -81,23 +81,11 @@ tasks:
 
   destroy:ci:
     desc: Teardown a stack from Pulumi and AWS without prompt; no-op if stack absent
-    vars:
-      STACK_EXISTS:
-        sh: |
-          if pulumi stack select -s "$PULUMI_STACK" 2>/dev/null; then
-            echo true
-          else
-            echo false
-          fi
+    if: 'pulumi stack select -s "$PULUMI_STACK" 2>/dev/null'
     cmds:
-      - if: '{{eq .STACK_EXISTS "false"}}'
-        cmd: echo "No Pulumi stack $PULUMI_STACK found, skipping destroy."
-      - if: '{{eq .STACK_EXISTS "true"}}'
-        cmd: pulumi config env add emotes-service/dev --yes
-      - if: '{{eq .STACK_EXISTS "true"}}'
-        cmd: pulumi destroy --yes
-      - if: '{{eq .STACK_EXISTS "true"}}'
-        cmd: pulumi stack rm $PULUMI_STACK --yes
+      - pulumi config env add emotes-service/dev --yes
+      - pulumi destroy --yes
+      - pulumi stack rm $PULUMI_STACK --yes
 
   destroy:local:
     desc: Teardown a stack from Pulumi and AWS
