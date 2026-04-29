@@ -20,7 +20,8 @@ type StatelessComponent struct {
 }
 
 type StatefulResource struct {
-	TwitchEmotesSnapshotsTable *dynamodb.Table
+	TwitchEmotesEventsStoreTable *dynamodb.Table
+	TwitchEmotesSnapshotsTable   *dynamodb.Table
 }
 
 func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.ResourceOption, applicationConfig stack.ApplicationConfig, statefulResource StatefulResource) (*StatelessComponent, error) {
@@ -82,6 +83,17 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 				Actions: pulumi.StringArray{pulumi.String("dynamodb:PutItem")},
 				Resources: pulumi.StringArray{
 					statefulResource.TwitchEmotesSnapshotsTable.Arn,
+				},
+			},
+			&iam.GetPolicyDocumentStatementArgs{
+				Effect: pulumi.String("Allow"),
+				Actions: pulumi.StringArray{
+					pulumi.String("dynamodb:ConditionCheckItem"),
+					pulumi.String("dynamodb:PutItem"),
+					pulumi.String("dynamodb:Query"),
+				},
+				Resources: pulumi.StringArray{
+					statefulResource.TwitchEmotesEventsStoreTable.Arn,
 				},
 			},
 		},

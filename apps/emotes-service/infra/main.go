@@ -83,7 +83,10 @@ func main() {
 			return err
 		}
 
-		statelessComponent, err := components.NewStatelessComponent(ctx, providerResource, appConfig, components.StatefulResource{TwitchEmotesSnapshotsTable: statefulComponent.TwitchEmotesSnapshotsTable})
+		statelessComponent, err := components.NewStatelessComponent(ctx, providerResource, appConfig, components.StatefulResource{
+			TwitchEmotesEventsStoreTable: statefulComponent.TwitchEmotesEmotesEventStoreTable,
+			TwitchEmotesSnapshotsTable:   statefulComponent.TwitchEmotesSnapshotsTable,
+		})
 		if err != nil {
 			return err
 		}
