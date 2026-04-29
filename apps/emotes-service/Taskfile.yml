@@ -14,10 +14,8 @@ tasks:
   create:
     desc: Creates a stack in pulumi with ESC values
     cmds:
-      - |
-        if ! pulumi stack select -s $PULUMI_STACK 2>/dev/null; then
-          pulumi stack init -s $PULUMI_STACK
-        fi
+      - cmd: pulumi stack init -s $PULUMI_STACK
+        if: 'pulumi stack select -s "$PULUMI_STACK" 2>/dev/null'
       - pulumi config env add emotes-service/dev --yes
       - pulumi config env add emotes-service/twitch-credentials --yes
 
@@ -26,10 +24,8 @@ tasks:
     env:
       PULUMI_STACK: staging
     cmds:
-      - |
-        if ! pulumi stack select -s $PULUMI_STACK 2>/dev/null; then
-          pulumi stack init -s $PULUMI_STACK
-        fi
+      - cmd: pulumi stack init -s $PULUMI_STACK
+        if: 'pulumi stack select -s "$PULUMI_STACK" 2>/dev/null'
       - pulumi config env add emotes-service/staging --yes
       - pulumi config env add emotes-service/twitch-credentials --yes
 
@@ -38,10 +34,8 @@ tasks:
     env:
       PULUMI_STACK: prod
     cmds:
-      - |
-        if ! pulumi stack select -s $PULUMI_STACK 2>/dev/null; then
-          pulumi stack init -s $PULUMI_STACK
-        fi
+      - cmd: pulumi stack init -s $PULUMI_STACK
+        if: 'pulumi stack select -s "$PULUMI_STACK" 2>/dev/null'
       - pulumi config env add emotes-service/prod --yes
       - pulumi config env add emotes-service/twitch-credentials --yes
 
