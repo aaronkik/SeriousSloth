@@ -7,10 +7,10 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "test:ci": "turbo run test:ci",
-    "prepare": "husky install"
+    "prepare": "husky"
   },
   "devDependencies": {
-    "husky": "^8.0.2"
+    "husky": "9.1.7"
   },
   "engines": {
     "node": "20.x"
