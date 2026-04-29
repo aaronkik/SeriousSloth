@@ -87,6 +87,11 @@ func GetGlobalEmotes(ctx context.Context, accessToken string) ([]map[string]inte
 
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		slog.Error("Unexpected status code", "status", resp.StatusCode, "response", resp)
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
 	globalEmotesResponse := GlobalEmotesResponse{}
 	err = json.NewDecoder(resp.Body).Decode(&globalEmotesResponse)
 	if err != nil {
