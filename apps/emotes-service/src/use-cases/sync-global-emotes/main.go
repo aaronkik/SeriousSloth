@@ -2,11 +2,9 @@ package main
 
 import (
 	"context"
-	"emotes-service/src/adapters/secondary/dynamodb"
+	"emotes-service/src/adapters/secondary/event_store"
 	"emotes-service/src/adapters/secondary/twitch"
-	"emotes-service/src/environment"
 	"log/slog"
-	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -26,17 +24,24 @@ func handler(ctx context.Context, event events.CloudWatchEvent) error {
 		return err
 	}
 
-	err = dynamodb.PutItem(ctx, dynamodb.PutItemInput{
-		TableName:  environment.GetOrFatal("TWITCH_EMOTES_SNAPSHOT_TABLE"),
-		PK:         "GLOBAL",
-		SK:         new(time.Now().UTC().Format(time.RFC3339)),
-		Attributes: map[string]interface{}{"globalEmotes": globalEmotes},
-	})
+	aggregate, err := event_store.LoadAggregate(ctx, event_store.GlobalEmotesAggregateId)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	syncEvents := event_store.DecideSyncEvents(event_store.GlobalEmotesAggregateId, aggregate, globalEmotes)
+
+	err = event_store.AppendEvents(ctx, syncEvents)
+	if err == nil {
+		return nil
+	}
+
+	//if conflict, ok := errors.AsType[*event_store.ConcurrencyConflictError](err); ok {
+	//	slog.WarnContext(ctx, "append conflict, retrying", "attempt", attempt, "sequence", conflict.Sequence)
+	//	continue
+	//}
+	return err
+
 }
 
 func main() {
