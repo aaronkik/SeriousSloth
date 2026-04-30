@@ -41,25 +41,25 @@ func GetAccessToken(ctx context.Context) (string, error) {
 	return token.AccessToken, nil
 }
 
-//type GlobalEmote struct {
-//	Format []string `json:"format"`
-//	ID     string   `json:"id"`
-//	Images struct {
-//		URL1X string `json:"url_1x"`
-//		URL2X string `json:"url_2x"`
-//		URL4X string `json:"url_4x"`
-//	} `json:"images"`
-//	Name      string   `json:"name"`
-//	Scale     []string `json:"scale"`
-//	ThemeMode []string `json:"theme_mode"`
-//}
-
-type GlobalEmotesResponse struct {
-	Data     []map[string]interface{} `json:"data"`
-	Template string                   `json:"template"`
+type GlobalEmote struct {
+	Format []string `json:"format"`
+	ID     string   `json:"id"`
+	Images struct {
+		URL1X string `json:"url_1x"`
+		URL2X string `json:"url_2x"`
+		URL4X string `json:"url_4x"`
+	} `json:"images"`
+	Name      string   `json:"name"`
+	Scale     []string `json:"scale"`
+	ThemeMode []string `json:"theme_mode"`
 }
 
-func GetGlobalEmotes(ctx context.Context, accessToken string) ([]map[string]interface{}, error) {
+type GlobalEmotesResponse struct {
+	Data     []GlobalEmote `json:"data"`
+	Template string        `json:"template"`
+}
+
+func GetGlobalEmotes(ctx context.Context, accessToken string) ([]GlobalEmote, error) {
 	client := &http.Client{
 		Timeout: time.Second * 10,
 	}
