@@ -63,11 +63,12 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 			"bootstrap": pulumi.NewFileAsset("../dist/sync-global-emotes/bootstrap"),
 		}),
 		Environment: map[string]pulumi.StringInput{
-			"TWITCH_EMOTES_SNAPSHOT_TABLE":   pulumi.StringInput(statefulResource.TwitchEmotesSnapshotsTable.Name),
-			"TWITCH_GLOBAL_EMOTES_ENDPOINT":  applicationConfig.Twitch.GlobalEmotesEndpoint,
-			"TWITCH_OAUTH_ENDPOINT":          applicationConfig.Twitch.OauthEndpoint,
-			"TWITCH_CLIENT_ID_PARAM_ARN":     pulumi.StringInput(twitchClientIdParam.Arn),
-			"TWITCH_CLIENT_SECRET_PARAM_ARN": pulumi.StringInput(twitchClientSecretParam.Arn),
+			"TWITCH_EMOTES_SNAPSHOT_TABLE":    pulumi.StringInput(statefulResource.TwitchEmotesSnapshotsTable.Name),
+			"TWITCH_EMOTES_EVENT_STORE_TABLE": pulumi.StringInput(statefulResource.TwitchEmotesEventsStoreTable.Name),
+			"TWITCH_GLOBAL_EMOTES_ENDPOINT":   applicationConfig.Twitch.GlobalEmotesEndpoint,
+			"TWITCH_OAUTH_ENDPOINT":           applicationConfig.Twitch.OauthEndpoint,
+			"TWITCH_CLIENT_ID_PARAM_ARN":      pulumi.StringInput(twitchClientIdParam.Arn),
+			"TWITCH_CLIENT_SECRET_PARAM_ARN":  pulumi.StringInput(twitchClientSecretParam.Arn),
 		},
 		PolicyStatements: iam.GetPolicyDocumentStatementArray{
 			&iam.GetPolicyDocumentStatementArgs{
