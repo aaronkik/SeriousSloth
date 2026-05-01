@@ -7,18 +7,22 @@ import (
 	"emotes-service/src/tests/helpers"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	awslambda "github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGlobalEmotes(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
 	syncLambdaName := helpers.GetPulumiExport(t, "syncGlobalEmotesLambdaName")
-	snapshotsTableName := helpers.GetPulumiExport(t, "twitchEmotesSnapshotsTableName")
+	emotesEventStoreTableName := helpers.GetPulumiExport(t, "twitchEmotesEmotesEventStoreTable")
 	mockTwitchResponsesTableName := helpers.GetPulumiExport(t, "mockTwitchResponsesTableName")
 
 	ctx := context.Background()
@@ -31,9 +35,7 @@ func TestGlobalEmotes(t *testing.T) {
 	lambdaClient := awslambda.NewFromConfig(cfg)
 
 	seedMockResponses(t, ctx, ddbClient, mockTwitchResponsesTableName)
-	clearSnapshotsTable(t, ctx, ddbClient, snapshotsTableName)
-
-	beforeInvoke := time.Now().UTC()
+	clearTable(t, ctx, ddbClient, emotesEventStoreTableName)
 
 	invokeOutput, err := lambdaClient.Invoke(ctx, &awslambda.InvokeInput{
 		FunctionName: aws.String(syncLambdaName),
@@ -47,7 +49,7 @@ func TestGlobalEmotes(t *testing.T) {
 	}
 
 	queryOutput, err := ddbClient.Query(ctx, &dynamodb.QueryInput{
-		TableName:              aws.String(snapshotsTableName),
+		TableName:              aws.String(emotesEventStoreTableName),
 		KeyConditionExpression: aws.String("PK = :pk"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
 			":pk": &types.AttributeValueMemberS{Value: "GLOBAL"},
@@ -57,53 +59,57 @@ func TestGlobalEmotes(t *testing.T) {
 		t.Fatalf("failed to query DynamoDB: %v", err)
 	}
 
-	if len(queryOutput.Items) == 0 {
-		t.Fatal("expected at least one record in DynamoDB after Lambda invocation, got 0")
-	}
+	require.Lenf(queryOutput.Items, 1, "expected 1 item, got %d", len(queryOutput.Items))
 
-	item := queryOutput.Items[0]
+	emoteServiceEvent := queryOutput.Items[0]
 
-	skAttr, ok := item["SK"].(*types.AttributeValueMemberS)
-	if !ok {
-		t.Fatal("record missing 'SK' attribute or not a string")
-	}
-	sk, err := time.Parse(time.RFC3339, skAttr.Value)
-	if err != nil {
-		t.Fatalf("SK %q is not RFC3339: %v", skAttr.Value, err)
-	}
-	if sk.Before(beforeInvoke) {
-		t.Fatalf("SK %s is before beforeInvoke %s", sk, beforeInvoke)
-	}
+	assert.Equalf(emoteServiceEvent["SK"].(*types.AttributeValueMemberS).Value, "SEQUENCE#0000001", "Event is out of sequence")
+	assert.Regexp(`^es_.+$`, emoteServiceEvent["id"].(*types.AttributeValueMemberS).Value)
 
-	globalEmotesAttr, ok := item["globalEmotes"]
-	if !ok {
-		t.Fatal("record missing 'globalEmotes' attribute")
-	}
+	assert.Equal("GLOBAL", emoteServiceEvent["PK"].(*types.AttributeValueMemberS).Value)
+	assert.Equal("GLOBAL", emoteServiceEvent["aggregateId"].(*types.AttributeValueMemberS).Value)
+	assert.Equal("1", emoteServiceEvent["emoteId"].(*types.AttributeValueMemberS).Value)
+	assert.Equal("GLOBAL#SEQUENCE#0000001", emoteServiceEvent["eventId"].(*types.AttributeValueMemberS).Value)
+	assert.Equal("EmoteAdded", emoteServiceEvent["eventName"].(*types.AttributeValueMemberS).Value)
+	assert.Equal("EVENT", emoteServiceEvent["kind"].(*types.AttributeValueMemberS).Value)
+	assert.Equal("1", emoteServiceEvent["sequence"].(*types.AttributeValueMemberN).Value)
 
-	listAttr, ok := globalEmotesAttr.(*types.AttributeValueMemberL)
-	if !ok {
-		t.Fatalf("globalEmotes is not a list, got %T", globalEmotesAttr)
-	}
+	emote := emoteServiceEvent["emote"].(*types.AttributeValueMemberM).Value
+	assert.Equal("1", emote["id"].(*types.AttributeValueMemberS).Value)
+	assert.Equal(":)", emote["name"].(*types.AttributeValueMemberS).Value)
 
-	if len(listAttr.Value) != 1 {
-		t.Fatalf("expected 1 emote in globalEmotes, got %d", len(listAttr.Value))
-	}
+	format := emote["format"].(*types.AttributeValueMemberL).Value
+	require.Len(format, 1)
+	assert.Equal("static", format[0].(*types.AttributeValueMemberS).Value)
 
-	t.Logf("verified %d emote(s) written to DynamoDB at SK=%s", len(listAttr.Value), sk)
+	scale := emote["scale"].(*types.AttributeValueMemberL).Value
+	require.Len(scale, 3)
+	assert.Equal("1.0", scale[0].(*types.AttributeValueMemberS).Value)
+	assert.Equal("2.0", scale[1].(*types.AttributeValueMemberS).Value)
+	assert.Equal("3.0", scale[2].(*types.AttributeValueMemberS).Value)
+
+	themeMode := emote["theme_mode"].(*types.AttributeValueMemberL).Value
+	require.Len(themeMode, 2)
+	assert.Equal("light", themeMode[0].(*types.AttributeValueMemberS).Value)
+	assert.Equal("dark", themeMode[1].(*types.AttributeValueMemberS).Value)
+
+	images := emote["images"].(*types.AttributeValueMemberM).Value
+	assert.Equal("https://static-cdn.jtvnw.net/emoticons/v2/1/static/light/1.0", images["url_1x"].(*types.AttributeValueMemberS).Value)
+	assert.Equal("https://static-cdn.jtvnw.net/emoticons/v2/1/static/light/2.0", images["url_2x"].(*types.AttributeValueMemberS).Value)
+	assert.Equal("https://static-cdn.jtvnw.net/emoticons/v2/1/static/light/3.0", images["url_4x"].(*types.AttributeValueMemberS).Value)
 }
 
-func clearSnapshotsTable(t *testing.T, ctx context.Context, client *dynamodb.Client, tableName string) {
+func clearTable(t *testing.T, ctx context.Context, client *dynamodb.Client, tableName string) {
 	t.Helper()
 
 	var lastKey map[string]types.AttributeValue
 	for {
 		scanOutput, err := client.Scan(ctx, &dynamodb.ScanInput{
-			TableName: aws.String(tableName),
-			//ProjectionExpression: aws.String("PK, SK"),
+			TableName:         aws.String(tableName),
 			ExclusiveStartKey: lastKey,
 		})
 		if err != nil {
-			t.Fatalf("failed to scan snapshots table: %v", err)
+			t.Fatalf("failed to scan table: %v", err)
 		}
 
 		for _, scanned := range scanOutput.Items {
@@ -115,7 +121,7 @@ func clearSnapshotsTable(t *testing.T, ctx context.Context, client *dynamodb.Cli
 				},
 			})
 			if err != nil {
-				t.Fatalf("failed to delete snapshot item: %v", err)
+				t.Fatalf("failed to delete item: %v", err)
 			}
 		}
 
