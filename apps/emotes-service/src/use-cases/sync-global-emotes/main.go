@@ -36,12 +36,7 @@ func handler(ctx context.Context, event events.CloudWatchEvent) error {
 		return nil
 	}
 
-	//if conflict, ok := errors.AsType[*event_store.ConcurrencyConflictError](err); ok {
-	//	slog.WarnContext(ctx, "append conflict, retrying", "attempt", attempt, "sequence", conflict.Sequence)
-	//	continue
-	//}
 	return err
-
 }
 
 func main() {
