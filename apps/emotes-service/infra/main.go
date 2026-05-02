@@ -93,6 +93,7 @@ func main() {
 
 		if integrationComponent != nil {
 			ctx.Export("syncGlobalEmotesLambdaName", statelessComponent.SyncGlobalEmotesFunction.Name)
+			ctx.Export("twitchEmotesEmotesEventStoreTable", statefulComponent.TwitchEmotesEmotesEventStoreTable.Name)
 			ctx.Export("twitchEmotesSnapshotsTableName", statefulComponent.TwitchEmotesSnapshotsTable.Name)
 			ctx.Export("mockTwitchResponsesTableName", integrationComponent.MockTwitchResponsesTable.Name)
 		}

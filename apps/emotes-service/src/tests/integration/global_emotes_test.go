@@ -7,18 +7,22 @@ import (
 	"emotes-service/src/tests/helpers"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	awslambda "github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGlobalEmotes(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
 	syncLambdaName := helpers.GetPulumiExport(t, "syncGlobalEmotesLambdaName")
-	snapshotsTableName := helpers.GetPulumiExport(t, "twitchEmotesSnapshotsTableName")
+	emotesEventStoreTableName := helpers.GetPulumiExport(t, "twitchEmotesEmotesEventStoreTable")
 	mockTwitchResponsesTableName := helpers.GetPulumiExport(t, "mockTwitchResponsesTableName")
 
 	ctx := context.Background()
@@ -31,23 +35,12 @@ func TestGlobalEmotes(t *testing.T) {
 	lambdaClient := awslambda.NewFromConfig(cfg)
 
 	seedMockResponses(t, ctx, ddbClient, mockTwitchResponsesTableName)
-	clearSnapshotsTable(t, ctx, ddbClient, snapshotsTableName)
+	clearTable(t, ctx, ddbClient, emotesEventStoreTableName)
 
-	beforeInvoke := time.Now().UTC()
-
-	invokeOutput, err := lambdaClient.Invoke(ctx, &awslambda.InvokeInput{
-		FunctionName: aws.String(syncLambdaName),
-		Payload:      []byte(`{}`),
-	})
-	if err != nil {
-		t.Fatalf("failed to invoke Lambda: %v", err)
-	}
-	if invokeOutput.FunctionError != nil {
-		t.Fatalf("Lambda returned error: %s, payload: %s", *invokeOutput.FunctionError, string(invokeOutput.Payload))
-	}
+	triggerLambda(t, ctx, lambdaClient, syncLambdaName)
 
 	queryOutput, err := ddbClient.Query(ctx, &dynamodb.QueryInput{
-		TableName:              aws.String(snapshotsTableName),
+		TableName:              aws.String(emotesEventStoreTableName),
 		KeyConditionExpression: aws.String("PK = :pk"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
 			":pk": &types.AttributeValueMemberS{Value: "GLOBAL"},
@@ -57,53 +50,87 @@ func TestGlobalEmotes(t *testing.T) {
 		t.Fatalf("failed to query DynamoDB: %v", err)
 	}
 
-	if len(queryOutput.Items) == 0 {
-		t.Fatal("expected at least one record in DynamoDB after Lambda invocation, got 0")
-	}
+	require.Lenf(queryOutput.Items, 1, "expected 1 item, got %d", len(queryOutput.Items))
 
-	item := queryOutput.Items[0]
+	emoteServiceEvent := queryOutput.Items[0]
 
-	skAttr, ok := item["SK"].(*types.AttributeValueMemberS)
-	if !ok {
-		t.Fatal("record missing 'SK' attribute or not a string")
-	}
-	sk, err := time.Parse(time.RFC3339, skAttr.Value)
+	assert.Equalf(emoteServiceEvent["SK"].(*types.AttributeValueMemberS).Value, "SEQUENCE#0000001", "Event is out of sequence")
+	assert.Regexp(`^es_.+$`, emoteServiceEvent["id"].(*types.AttributeValueMemberS).Value)
+
+	assert.Equal("GLOBAL", emoteServiceEvent["aggregateId"].(*types.AttributeValueMemberS).Value)
+	assert.Equal("1", emoteServiceEvent["emoteId"].(*types.AttributeValueMemberS).Value)
+	assert.Equal("GLOBAL#SEQUENCE#0000001", emoteServiceEvent["eventId"].(*types.AttributeValueMemberS).Value)
+	assert.Equal("EmoteAdded", emoteServiceEvent["eventName"].(*types.AttributeValueMemberS).Value)
+	assert.Equal("EVENT", emoteServiceEvent["kind"].(*types.AttributeValueMemberS).Value)
+	assert.Equal("1", emoteServiceEvent["sequence"].(*types.AttributeValueMemberN).Value)
+
+	emote := emoteServiceEvent["emote"].(*types.AttributeValueMemberM).Value
+	assert.Equal("1", emote["id"].(*types.AttributeValueMemberS).Value)
+	assert.Equal(":)", emote["name"].(*types.AttributeValueMemberS).Value)
+
+	format := emote["format"].(*types.AttributeValueMemberL).Value
+	require.Len(format, 1)
+	assert.Equal("static", format[0].(*types.AttributeValueMemberS).Value)
+
+	scale := emote["scale"].(*types.AttributeValueMemberL).Value
+	require.Len(scale, 3)
+	assert.Equal("1.0", scale[0].(*types.AttributeValueMemberS).Value)
+	assert.Equal("2.0", scale[1].(*types.AttributeValueMemberS).Value)
+	assert.Equal("3.0", scale[2].(*types.AttributeValueMemberS).Value)
+
+	themeMode := emote["theme_mode"].(*types.AttributeValueMemberL).Value
+	require.Len(themeMode, 2)
+	assert.Equal("light", themeMode[0].(*types.AttributeValueMemberS).Value)
+	assert.Equal("dark", themeMode[1].(*types.AttributeValueMemberS).Value)
+
+	images := emote["images"].(*types.AttributeValueMemberM).Value
+	assert.Equal("https://static-cdn.jtvnw.net/emoticons/v2/1/static/light/1.0", images["url_1x"].(*types.AttributeValueMemberS).Value)
+	assert.Equal("https://static-cdn.jtvnw.net/emoticons/v2/1/static/light/2.0", images["url_2x"].(*types.AttributeValueMemberS).Value)
+	assert.Equal("https://static-cdn.jtvnw.net/emoticons/v2/1/static/light/3.0", images["url_4x"].(*types.AttributeValueMemberS).Value)
+
+	// Remove the emote from the Twitch response
+	updateGlobalEmotesResponse(t, ctx, ddbClient, mockTwitchResponsesTableName, "../fixtures/twitch-global-emotes-empty-response.json")
+	triggerLambda(t, ctx, lambdaClient, syncLambdaName)
+
+	queryOutput, err = ddbClient.Query(ctx, &dynamodb.QueryInput{
+		TableName:              aws.String(emotesEventStoreTableName),
+		KeyConditionExpression: aws.String("PK = :pk"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":pk": &types.AttributeValueMemberS{Value: "GLOBAL"},
+		},
+	})
 	if err != nil {
-		t.Fatalf("SK %q is not RFC3339: %v", skAttr.Value, err)
-	}
-	if sk.Before(beforeInvoke) {
-		t.Fatalf("SK %s is before beforeInvoke %s", sk, beforeInvoke)
+		t.Fatalf("failed to query DynamoDB: %v", err)
 	}
 
-	globalEmotesAttr, ok := item["globalEmotes"]
-	if !ok {
-		t.Fatal("record missing 'globalEmotes' attribute")
-	}
+	require.Len(queryOutput.Items, 2)
+	emoteRemovedEvent := queryOutput.Items[1]
 
-	listAttr, ok := globalEmotesAttr.(*types.AttributeValueMemberL)
-	if !ok {
-		t.Fatalf("globalEmotes is not a list, got %T", globalEmotesAttr)
-	}
+	assert.Equalf(emoteRemovedEvent["SK"].(*types.AttributeValueMemberS).Value, "SEQUENCE#0000002", "Event is out of sequence")
 
-	if len(listAttr.Value) != 1 {
-		t.Fatalf("expected 1 emote in globalEmotes, got %d", len(listAttr.Value))
-	}
+	assert.Equal("GLOBAL", emoteRemovedEvent["aggregateId"].(*types.AttributeValueMemberS).Value)
+	assert.Equal("1", emoteRemovedEvent["emoteId"].(*types.AttributeValueMemberS).Value)
+	assert.Equal("GLOBAL#SEQUENCE#0000002", emoteRemovedEvent["eventId"].(*types.AttributeValueMemberS).Value)
+	assert.Equal("EmoteRemoved", emoteRemovedEvent["eventName"].(*types.AttributeValueMemberS).Value)
+	assert.Equal("EVENT", emoteRemovedEvent["kind"].(*types.AttributeValueMemberS).Value)
+	assert.Equal("2", emoteRemovedEvent["sequence"].(*types.AttributeValueMemberN).Value)
 
-	t.Logf("verified %d emote(s) written to DynamoDB at SK=%s", len(listAttr.Value), sk)
+	emoteRemovedEventEmote := emoteRemovedEvent["emote"].(*types.AttributeValueMemberNULL).Value
+	assert.True(emoteRemovedEventEmote)
+
 }
 
-func clearSnapshotsTable(t *testing.T, ctx context.Context, client *dynamodb.Client, tableName string) {
+func clearTable(t *testing.T, ctx context.Context, client *dynamodb.Client, tableName string) {
 	t.Helper()
 
 	var lastKey map[string]types.AttributeValue
 	for {
 		scanOutput, err := client.Scan(ctx, &dynamodb.ScanInput{
-			TableName: aws.String(tableName),
-			//ProjectionExpression: aws.String("PK, SK"),
+			TableName:         aws.String(tableName),
 			ExclusiveStartKey: lastKey,
 		})
 		if err != nil {
-			t.Fatalf("failed to scan snapshots table: %v", err)
+			t.Fatalf("failed to scan table: %v", err)
 		}
 
 		for _, scanned := range scanOutput.Items {
@@ -115,7 +142,7 @@ func clearSnapshotsTable(t *testing.T, ctx context.Context, client *dynamodb.Cli
 				},
 			})
 			if err != nil {
-				t.Fatalf("failed to delete snapshot item: %v", err)
+				t.Fatalf("failed to delete item: %v", err)
 			}
 		}
 
@@ -158,5 +185,45 @@ func seedMockResponses(t *testing.T, ctx context.Context, client *dynamodb.Clien
 		if err != nil {
 			t.Fatalf("failed to seed mock response PK=%s: %v", item.pk, err)
 		}
+	}
+}
+
+func updateGlobalEmotesResponse(t *testing.T, ctx context.Context, client *dynamodb.Client, tableName string, fixturePath string) {
+	t.Helper()
+
+	fixture, err := os.ReadFile(fixturePath)
+	if err != nil {
+		t.Fatalf("failed to read emotes fixture: %v", err)
+	}
+
+	_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
+		TableName: aws.String(tableName),
+		Item: map[string]types.AttributeValue{
+			"PK": &types.AttributeValueMemberS{
+				Value: "/helix/chat/emotes/global",
+			},
+			"responseBody": &types.AttributeValueMemberS{
+				Value: string(fixture),
+			},
+		},
+	})
+	if err != nil {
+		t.Fatal("failed to put", err)
+	}
+}
+
+func triggerLambda(t *testing.T, ctx context.Context, client *awslambda.Client, lambdaName string) {
+	t.Helper()
+
+	invokeOutput, err := client.Invoke(ctx, &awslambda.InvokeInput{
+		FunctionName: aws.String(lambdaName),
+		Payload:      []byte("{}"),
+	})
+
+	if err != nil {
+		t.Fatalf("failed to invoke Lambda: %v", err)
+	}
+	if invokeOutput.FunctionError != nil {
+		t.Fatalf("Lambda returned error: %s, payload: %s", *invokeOutput.FunctionError, string(invokeOutput.Payload))
 	}
 }
