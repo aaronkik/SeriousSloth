@@ -85,7 +85,6 @@ func main() {
 
 		statelessComponent, err := components.NewStatelessComponent(ctx, providerResource, appConfig, components.StatefulResource{
 			TwitchEmotesEventsStoreTable: statefulComponent.TwitchEmotesEmotesEventStoreTable,
-			TwitchEmotesSnapshotsTable:   statefulComponent.TwitchEmotesSnapshotsTable,
 		})
 		if err != nil {
 			return err
@@ -94,7 +93,6 @@ func main() {
 		if integrationComponent != nil {
 			ctx.Export("syncGlobalEmotesLambdaName", statelessComponent.SyncGlobalEmotesFunction.Name)
 			ctx.Export("twitchEmotesEmotesEventStoreTable", statefulComponent.TwitchEmotesEmotesEventStoreTable.Name)
-			ctx.Export("twitchEmotesSnapshotsTableName", statefulComponent.TwitchEmotesSnapshotsTable.Name)
 			ctx.Export("mockTwitchResponsesTableName", integrationComponent.MockTwitchResponsesTable.Name)
 		}
 

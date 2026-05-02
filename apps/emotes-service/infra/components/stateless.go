@@ -21,7 +21,6 @@ type StatelessComponent struct {
 
 type StatefulResource struct {
 	TwitchEmotesEventsStoreTable *dynamodb.Table
-	TwitchEmotesSnapshotsTable   *dynamodb.Table
 }
 
 func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.ResourceOption, applicationConfig stack.ApplicationConfig, statefulResource StatefulResource) (*StatelessComponent, error) {
@@ -63,7 +62,6 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 			"bootstrap": pulumi.NewFileAsset("../dist/sync-global-emotes/bootstrap"),
 		}),
 		Environment: map[string]pulumi.StringInput{
-			"TWITCH_EMOTES_SNAPSHOT_TABLE":    pulumi.StringInput(statefulResource.TwitchEmotesSnapshotsTable.Name),
 			"TWITCH_EMOTES_EVENT_STORE_TABLE": pulumi.StringInput(statefulResource.TwitchEmotesEventsStoreTable.Name),
 			"TWITCH_GLOBAL_EMOTES_ENDPOINT":   applicationConfig.Twitch.GlobalEmotesEndpoint,
 			"TWITCH_OAUTH_ENDPOINT":           applicationConfig.Twitch.OauthEndpoint,
@@ -77,13 +75,6 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 				Resources: pulumi.StringArray{
 					twitchClientIdParam.Arn,
 					twitchClientSecretParam.Arn,
-				},
-			},
-			&iam.GetPolicyDocumentStatementArgs{
-				Effect:  pulumi.String("Allow"),
-				Actions: pulumi.StringArray{pulumi.String("dynamodb:PutItem")},
-				Resources: pulumi.StringArray{
-					statefulResource.TwitchEmotesSnapshotsTable.Arn,
 				},
 			},
 			&iam.GetPolicyDocumentStatementArgs{
@@ -104,7 +95,6 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 		pulumi.DependsOn([]pulumi.Resource{
 			twitchClientIdParam,
 			twitchClientSecretParam,
-			statefulResource.TwitchEmotesSnapshotsTable,
 		}))
 	if err != nil {
 		return nil, err
