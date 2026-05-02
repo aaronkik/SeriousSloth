@@ -177,7 +177,7 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 		return nil, err
 	}
 
-	schedulerState := "ENABLED"
+	schedulerState := "DISABLED"
 	if stack.IsEphemeral(ctx.Stack()) {
 		schedulerState = "DISABLED"
 	}
