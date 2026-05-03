@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGlobalEmotes(t *testing.T) {
+func TestEmotesEventStore(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
@@ -226,4 +226,43 @@ func triggerLambda(t *testing.T, ctx context.Context, client *awslambda.Client, 
 	if invokeOutput.FunctionError != nil {
 		t.Fatalf("Lambda returned error: %s, payload: %s", *invokeOutput.FunctionError, string(invokeOutput.Payload))
 	}
+}
+
+func TestGlobalEmotesProjection(t *testing.T) {
+	//assert := assert.New(t)
+	require := require.New(t)
+
+	syncLambdaName := helpers.GetPulumiExport(t, "syncGlobalEmotesLambdaName")
+	emotesEventStoreTableName := helpers.GetPulumiExport(t, "twitchEmotesEventStoreTable")
+	emotesProjectionsTable := helpers.GetPulumiExport(t, "twitchEmotesProjectionsTable")
+	mockTwitchResponsesTableName := helpers.GetPulumiExport(t, "mockTwitchResponsesTableName")
+
+	ctx := context.Background()
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		t.Fatalf("failed to load AWS config: %v", err)
+	}
+
+	ddbClient := dynamodb.NewFromConfig(cfg)
+	lambdaClient := awslambda.NewFromConfig(cfg)
+
+	seedMockResponses(t, ctx, ddbClient, mockTwitchResponsesTableName)
+	clearTable(t, ctx, ddbClient, emotesEventStoreTableName)
+	clearTable(t, ctx, ddbClient, emotesProjectionsTable)
+
+	triggerLambda(t, ctx, lambdaClient, syncLambdaName)
+
+	queryOutput, err := ddbClient.Query(ctx, &dynamodb.QueryInput{
+		TableName:              aws.String(emotesProjectionsTable),
+		KeyConditionExpression: aws.String("PK = :pk"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":pk": &types.AttributeValueMemberS{Value: "GLOBAL"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("failed to query DynamoDB: %v", err)
+	}
+
+	require.Lenf(queryOutput.Items, 1, "expected 1 item, got %d", len(queryOutput.Items))
+
 }
