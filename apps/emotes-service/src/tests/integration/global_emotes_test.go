@@ -22,7 +22,7 @@ func TestGlobalEmotes(t *testing.T) {
 	require := require.New(t)
 
 	syncLambdaName := helpers.GetPulumiExport(t, "syncGlobalEmotesLambdaName")
-	emotesEventStoreTableName := helpers.GetPulumiExport(t, "twitchEmotesEmotesEventStoreTable")
+	emotesEventStoreTableName := helpers.GetPulumiExport(t, "twitchEmotesEventStoreTable")
 	mockTwitchResponsesTableName := helpers.GetPulumiExport(t, "mockTwitchResponsesTableName")
 
 	ctx := context.Background()

@@ -9,7 +9,7 @@ import (
 
 type StatefulComponent struct {
 	pulumi.ResourceState
-	TwitchEmotesEmotesEventStoreTable *dynamodb.Table
+	TwitchEmotesEventStoreTable *dynamodb.Table
 }
 
 func NewStatefulComponent(ctx *pulumi.Context, providerResource pulumi.ResourceOption) (*StatefulComponent, error) {
@@ -45,7 +45,7 @@ func NewStatefulComponent(ctx *pulumi.Context, providerResource pulumi.ResourceO
 		return nil, err
 	}
 
-	component.TwitchEmotesEmotesEventStoreTable = twitchEmotesEventStoreTable
+	component.TwitchEmotesEventStoreTable = twitchEmotesEventStoreTable
 
 	return component, nil
 }
