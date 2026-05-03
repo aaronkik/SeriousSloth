@@ -23,6 +23,7 @@ type StatelessComponent struct {
 
 type StatefulResource struct {
 	TwitchEmotesEventsStoreTable *dynamodb.Table
+	TwitchEmotesProjectionsTable *dynamodb.Table
 }
 
 func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.ResourceOption, applicationConfig stack.ApplicationConfig, statefulResource StatefulResource) (*StatelessComponent, error) {
@@ -222,7 +223,9 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 		Code: pulumi.NewAssetArchive(map[string]interface{}{
 			"bootstrap": pulumi.NewFileAsset("../dist/emotes-read-model-producer/bootstrap"),
 		}),
-		Environment: map[string]pulumi.StringInput{},
+		Environment: map[string]pulumi.StringInput{
+			"EVENTS_PROJECTION_TABLE_NAME": pulumi.StringInput(statefulResource.TwitchEmotesProjectionsTable.Name),
+		},
 		PolicyStatements: iam.GetPolicyDocumentStatementArray{
 			&iam.GetPolicyDocumentStatementArgs{
 				Effect: pulumi.String("Allow"),
@@ -243,6 +246,15 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 				},
 				Resources: pulumi.StringArray{
 					emotesReadModelProducerDlq.Arn,
+				},
+			},
+			&iam.GetPolicyDocumentStatementArgs{
+				Effect: pulumi.String("Allow"),
+				Actions: pulumi.StringArray{
+					pulumi.String("dynamodb:*"),
+				},
+				Resources: pulumi.StringArray{
+					statefulResource.TwitchEmotesProjectionsTable.Arn,
 				},
 			},
 		},
