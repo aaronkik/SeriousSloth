@@ -35,6 +35,8 @@ func NewStatefulComponent(ctx *pulumi.Context, providerResource pulumi.ResourceO
 			},
 		},
 		DeletionProtectionEnabled: pulumi.BoolPtr(stack.IsProduction(ctx.Stack())),
+		StreamEnabled:             pulumi.BoolPtr(true),
+		StreamViewType:            pulumi.String("NEW_IMAGE"),
 	},
 		pulumi.Parent(component),
 		providerResource,
