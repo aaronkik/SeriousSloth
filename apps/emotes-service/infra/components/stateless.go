@@ -251,7 +251,9 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 			&iam.GetPolicyDocumentStatementArgs{
 				Effect: pulumi.String("Allow"),
 				Actions: pulumi.StringArray{
-					pulumi.String("dynamodb:*"),
+					pulumi.String("dynamodb:ConditionCheckItem"),
+					pulumi.String("dynamodb:PutItem"),
+					pulumi.String("dynamodb:UpdateItem"),
 				},
 				Resources: pulumi.StringArray{
 					statefulResource.TwitchEmotesProjectionsTable.Arn,
