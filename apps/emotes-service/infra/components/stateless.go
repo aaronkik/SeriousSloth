@@ -1,11 +1,17 @@
 package components
 
 import (
+	"crypto/sha1"
 	"emotes-service/infra/components/shared"
 	"emotes-service/infra/stack"
+	"encoding/hex"
+	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws"
+	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/apigateway"
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/dynamodb"
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/iam"
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/lambda"
@@ -19,6 +25,16 @@ import (
 type StatelessComponent struct {
 	pulumi.ResourceState
 	SyncGlobalEmotesFunction *lambda.Function
+	ApiInvokeUrl             pulumi.StringOutput
+	ApiKeyId                 pulumi.IDOutput
+}
+
+// routeBinding ties an OpenAPI placeholder to a Lambda + the source path it can be invoked from.
+type routeBinding struct {
+	placeholder       string
+	permissionName    string
+	function          *lambda.Function
+	sourcePathPattern string
 }
 
 type StatefulResource struct {
@@ -293,6 +309,141 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 	if err != nil {
 		return nil, err
 	}
+
+	getEmotesLambda, err := components.NewLambda(ctx, "get-emotes", &components.LambdaArgs{
+		Code: pulumi.NewAssetArchive(map[string]any{
+			"bootstrap": pulumi.NewFileAsset("../dist/get-emotes/bootstrap"),
+		}),
+		Environment: pulumi.StringMap{
+			"EVENTS_PROJECTION_TABLE_NAME": pulumi.StringInput(statefulResource.TwitchEmotesProjectionsTable.Name),
+		},
+		PolicyStatements: iam.GetPolicyDocumentStatementArray{
+			&iam.GetPolicyDocumentStatementArgs{
+				Effect:    pulumi.String("Allow"),
+				Actions:   pulumi.StringArray{pulumi.String("dynamodb:Query")},
+				Resources: pulumi.StringArray{statefulResource.TwitchEmotesProjectionsTable.Arn},
+			},
+		},
+	}, pulumi.Parent(component), providerResource)
+	if err != nil {
+		return nil, err
+	}
+
+	bindings := []routeBinding{
+		{
+			placeholder:       "__GET_EMOTES_FUNCTION_NAME__",
+			permissionName:    "emotes-api-invoke-get-emotes",
+			function:          getEmotesLambda.Function,
+			sourcePathPattern: "*/GET/emotes/*",
+		},
+	}
+
+	specBytes, err := os.ReadFile("api/openapi.yaml")
+	if err != nil {
+		return nil, err
+	}
+	specTemplate := string(specBytes)
+
+	nameInputs := make([]any, 0, len(bindings))
+	for _, b := range bindings {
+		nameInputs = append(nameInputs, b.function.Name)
+	}
+
+	body := pulumi.All(nameInputs...).ApplyT(func(names []any) (string, error) {
+		out := specTemplate
+		for i, b := range bindings {
+			name, ok := names[i].(string)
+			if !ok {
+				return "", fmt.Errorf("expected string for binding %s", b.placeholder)
+			}
+			if !strings.Contains(out, b.placeholder) {
+				return "", fmt.Errorf("placeholder %s missing from openapi.yaml", b.placeholder)
+			}
+			out = strings.ReplaceAll(out, b.placeholder, name)
+		}
+		return out, nil
+	}).(pulumi.StringOutput)
+
+	bodyHash := body.ApplyT(func(s string) string {
+		sum := sha1.Sum([]byte(s))
+		return hex.EncodeToString(sum[:])
+	}).(pulumi.StringOutput)
+
+	restApi, err := apigateway.NewRestApi(ctx, "emotes-api", &apigateway.RestApiArgs{
+		Body: body,
+		EndpointConfiguration: &apigateway.RestApiEndpointConfigurationArgs{
+			Types: pulumi.String("REGIONAL"),
+		},
+	}, pulumi.Parent(component), providerResource)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, b := range bindings {
+		_, err = lambda.NewPermission(ctx, b.permissionName, &lambda.PermissionArgs{
+			Action:    pulumi.String("lambda:InvokeFunction"),
+			Function:  b.function.Name,
+			Principal: pulumi.String("apigateway.amazonaws.com"),
+			SourceArn: pulumi.Sprintf("%s/%s", restApi.ExecutionArn, b.sourcePathPattern),
+		}, pulumi.Parent(component), providerResource)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	deployment, err := apigateway.NewDeployment(ctx, "emotes-api-deployment", &apigateway.DeploymentArgs{
+		RestApi: restApi.ID(),
+		Triggers: pulumi.StringMap{
+			"redeployment": bodyHash,
+		},
+	}, pulumi.Parent(component), providerResource)
+	if err != nil {
+		return nil, err
+	}
+
+	stage, err := apigateway.NewStage(ctx, "emotes-api-stage", &apigateway.StageArgs{
+		RestApi:    restApi.ID(),
+		Deployment: deployment.ID(),
+		StageName:  pulumi.String("v1"),
+	}, pulumi.Parent(component), providerResource)
+	if err != nil {
+		return nil, err
+	}
+
+	apiKey, err := apigateway.NewApiKey(ctx, "emotes-api-key", &apigateway.ApiKeyArgs{
+		Enabled: pulumi.Bool(true),
+	}, pulumi.Parent(component), providerResource)
+	if err != nil {
+		return nil, err
+	}
+
+	usagePlan, err := apigateway.NewUsagePlan(ctx, "emotes-api-usage-plan", &apigateway.UsagePlanArgs{
+		ApiStages: apigateway.UsagePlanApiStageArray{
+			&apigateway.UsagePlanApiStageArgs{
+				ApiId: restApi.ID(),
+				Stage: stage.StageName,
+			},
+		},
+		ThrottleSettings: &apigateway.UsagePlanThrottleSettingsArgs{
+			RateLimit:  pulumi.Float64(10),
+			BurstLimit: pulumi.Int(20),
+		},
+	}, pulumi.Parent(component), providerResource)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = apigateway.NewUsagePlanKey(ctx, "emotes-api-usage-plan-key", &apigateway.UsagePlanKeyArgs{
+		KeyId:       apiKey.ID(),
+		KeyType:     pulumi.String("API_KEY"),
+		UsagePlanId: usagePlan.ID(),
+	}, pulumi.Parent(component), providerResource)
+	if err != nil {
+		return nil, err
+	}
+
+	component.ApiInvokeUrl = stage.InvokeUrl
+	component.ApiKeyId = apiKey.ID()
 
 	return component, nil
 }

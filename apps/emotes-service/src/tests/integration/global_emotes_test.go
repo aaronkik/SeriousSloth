@@ -5,12 +5,16 @@ package integration
 import (
 	"context"
 	"emotes-service/src/tests/helpers"
+	"encoding/json"
+	"io"
+	"net/http"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/apigateway"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	awslambda "github.com/aws/aws-sdk-go-v2/service/lambda"
@@ -27,8 +31,28 @@ var emotesEventStoreTableName string
 var emotesProjectionsTable string
 var mockTwitchResponsesTableName string
 
+var apiInvokeUrl string
+var apiKey string
+var httpClient = &http.Client{Timeout: 10 * time.Second}
+
 var testStartTime = time.Now()
 var emoteAddedEventId string
+
+type apiActiveEmote struct {
+	Emote struct {
+		Id        string   `json:"id"`
+		Name      string   `json:"name"`
+		Format    []string `json:"format"`
+		Scale     []string `json:"scale"`
+		ThemeMode []string `json:"theme_mode"`
+		Images    struct {
+			URL1X string `json:"url_1x"`
+			URL2X string `json:"url_2x"`
+			URL4X string `json:"url_4x"`
+		} `json:"images"`
+	} `json:"emote"`
+	AddedAt string `json:"addedAt"`
+}
 
 func Test_Emote_Added_Event_Is_Added_To_Event_Store_When_Emote_Exists(t *testing.T) {
 	require := require.New(t)
@@ -81,7 +105,7 @@ func Test_Emote_Added_Event_Is_Added_To_Event_Store_When_Emote_Exists(t *testing
 	require.NoError(err)
 	require.True(testStartTime.Before(createdAt))
 
-	assertEmote(t, require, emoteAddedEvent["emote"].(*types.AttributeValueMemberM))
+	assertDDBEmote(t, require, emoteAddedEvent["emote"].(*types.AttributeValueMemberM))
 }
 
 func Test_Added_Emote_Is_Added_To_Projection(t *testing.T) {
@@ -125,7 +149,7 @@ func Test_Added_Emote_Is_Added_To_Projection(t *testing.T) {
 	require.NoError(err)
 	require.True(testStartTime.Before(updatedAt))
 
-	assertEmote(t, require, emoteProjection["emote"].(*types.AttributeValueMemberM))
+	assertDDBEmote(t, require, emoteProjection["emote"].(*types.AttributeValueMemberM))
 
 	metadataProjection := projectionQueryOutput.Items[1]
 
@@ -140,6 +164,67 @@ func Test_Added_Emote_Is_Added_To_Projection(t *testing.T) {
 	updatedAt, err = time.Parse(time.RFC3339Nano, metadataProjection["__updatedAt"].(*types.AttributeValueMemberS).Value)
 	require.NoError(err)
 	require.True(testStartTime.Before(updatedAt))
+}
+
+func Test_Api_Returns_Active_Emote_For_Channel(t *testing.T) {
+	require := require.New(t)
+
+	apiInvokeUrl = helpers.GetPulumiExport(t, "apiInvokeUrl")
+	apiKeyId := helpers.GetPulumiExport(t, "apiKeyId")
+
+	apigwClient := apigateway.NewFromConfig(loadAwsConfig(t))
+	keyOutput, err := apigwClient.GetApiKey(ctx, &apigateway.GetApiKeyInput{
+		ApiKey:       aws.String(apiKeyId),
+		IncludeValue: aws.Bool(true),
+	})
+	require.NoError(err)
+	require.NotNil(keyOutput.Value)
+	apiKey = *keyOutput.Value
+
+	var parsed []apiActiveEmote
+	require.EventuallyWithT(func(c *assert.CollectT) {
+		body, status, err := getEmotes(ctx, apiInvokeUrl, apiKey, "GLOBAL")
+		if !assert.NoError(c, err) {
+			return
+		}
+		if !assert.Equal(c, http.StatusOK, status) {
+			return
+		}
+
+		parsed = nil
+		if !assert.NoError(c, json.Unmarshal(body, &parsed)) {
+			return
+		}
+		assert.Len(c, parsed, 1)
+	}, 30*time.Second, 2*time.Second)
+
+	require.Len(parsed, 1)
+	emote := parsed[0]
+	require.Equal("1", emote.Emote.Id)
+	require.Equal(":)", emote.Emote.Name)
+	require.Equal([]string{"static"}, emote.Emote.Format)
+	require.Equal([]string{"1.0", "2.0", "3.0"}, emote.Emote.Scale)
+	require.Equal([]string{"light", "dark"}, emote.Emote.ThemeMode)
+	require.Equal("https://static-cdn.jtvnw.net/emoticons/v2/1/static/light/1.0", emote.Emote.Images.URL1X)
+	require.Equal("https://static-cdn.jtvnw.net/emoticons/v2/1/static/light/2.0", emote.Emote.Images.URL2X)
+	require.Equal("https://static-cdn.jtvnw.net/emoticons/v2/1/static/light/3.0", emote.Emote.Images.URL4X)
+
+	addedAt, err := time.Parse(time.RFC3339Nano, emote.AddedAt)
+	require.NoError(err)
+	require.True(testStartTime.Before(addedAt))
+}
+
+func Test_Api_Returns_Forbidden_Without_Api_Key(t *testing.T) {
+	require := require.New(t)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiInvokeUrl+"/emotes/GLOBAL", nil)
+	require.NoError(err)
+
+	resp, err := httpClient.Do(req)
+	require.NoError(err)
+	defer resp.Body.Close()
+
+	require.Equal(http.StatusForbidden, resp.StatusCode)
 }
 
 var emoteRemovedEventId string
@@ -224,7 +309,7 @@ func Test_Emote_Remove_Event_Is_Reflected_In_Projection(t *testing.T) {
 	require.NoError(err)
 	require.True(createdAt.Before(updatedAt))
 
-	assertEmote(t, require, emoteProjection["emote"].(*types.AttributeValueMemberM))
+	assertDDBEmote(t, require, emoteProjection["emote"].(*types.AttributeValueMemberM))
 
 	require.Equal(emoteRemovedEventId, metadataProjection["__updatedBy"].(*types.AttributeValueMemberS).Value)
 
@@ -236,6 +321,55 @@ func Test_Emote_Remove_Event_Is_Reflected_In_Projection(t *testing.T) {
 	require.NoError(err)
 	require.True(testStartTime.Before(updatedAt))
 	require.True(createdAt.Before(updatedAt))
+}
+
+func Test_Api_Returns_No_Emotes_When_Emote_Has_Been_Removed(t *testing.T) {
+	require := require.New(t)
+
+	require.EventuallyWithT(func(c *assert.CollectT) {
+		body, status, err := getEmotes(ctx, apiInvokeUrl, apiKey, "GLOBAL")
+		if !assert.NoError(c, err) {
+			return
+		}
+		if !assert.Equal(c, http.StatusOK, status) {
+			return
+		}
+
+		var parsed []apiActiveEmote
+		if !assert.NoError(c, json.Unmarshal(body, &parsed)) {
+			return
+		}
+		assert.Empty(c, parsed)
+	}, 30*time.Second, 2*time.Second)
+}
+
+func loadAwsConfig(t *testing.T) aws.Config {
+	t.Helper()
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		t.Fatalf("failed to load AWS config: %v", err)
+	}
+	return cfg
+}
+
+func getEmotes(ctx context.Context, baseUrl, apiKey, channelId string) ([]byte, int, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseUrl+"/emotes/"+channelId, nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	req.Header.Set("x-api-key", apiKey)
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, resp.StatusCode, err
+	}
+	return body, resp.StatusCode, nil
 }
 
 func clearTable(t *testing.T, ctx context.Context, client *dynamodb.Client, tableName string) {
@@ -350,7 +484,7 @@ func triggerLambda(t *testing.T, ctx context.Context, client *awslambda.Client, 
 	}
 }
 
-func assertEmote(t *testing.T, require *require.Assertions, emoteAttr *types.AttributeValueMemberM) {
+func assertDDBEmote(t *testing.T, require *require.Assertions, emoteAttr *types.AttributeValueMemberM) {
 	t.Helper()
 
 	emote := emoteAttr.Value
