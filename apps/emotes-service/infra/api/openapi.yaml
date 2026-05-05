@@ -1,0 +1,121 @@
+openapi: 3.0.0
+info:
+  title: emotes-service
+  version: 1.0.0
+  description: Public read API for Twitch emotes.
+tags:
+  - name: Emotes
+paths:
+  /emotes/{channelId}:
+    get:
+      operationId: Emotes_list
+      description: List active emotes for an channelId
+      parameters:
+        - name: channelId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActiveEmote'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Emotes
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: '1.0'
+        uri: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:__GET_EMOTES_FUNCTION_NAME__/invocations
+        passthroughBehavior: when_no_match
+security:
+  - ApiKeyAuth: []
+components:
+  schemas:
+    ActiveEmote:
+      type: object
+      required:
+        - emote
+        - addedAt
+      properties:
+        emote:
+          $ref: '#/components/schemas/Emote'
+        addedAt:
+          type: string
+          format: date-time
+    Emote:
+      type: object
+      required:
+        - id
+        - name
+        - format
+        - scale
+        - theme_mode
+        - images
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        format:
+          type: array
+          items:
+            type: string
+            enum:
+              - static
+              - animated
+        scale:
+          type: array
+          items:
+            type: string
+            enum:
+              - '1.0'
+              - '2.0'
+              - '3.0'
+        theme_mode:
+          type: array
+          items:
+            type: string
+            enum:
+              - light
+              - dark
+        images:
+          type: object
+          properties:
+            url_1x:
+              type: string
+              format: uri
+            url_2x:
+              type: string
+              format: uri
+            url_4x:
+              type: string
+              format: uri
+          required:
+            - url_1x
+            - url_2x
+            - url_4x
+    Error:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+x-amazon-apigateway-api-key-source: HEADER
