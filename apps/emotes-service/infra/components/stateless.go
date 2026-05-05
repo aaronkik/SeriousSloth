@@ -3,12 +3,14 @@ package components
 import (
 	"emotes-service/infra/components/shared"
 	"emotes-service/infra/stack"
+	"time"
 
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws"
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/dynamodb"
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/iam"
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/lambda"
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/scheduler"
+	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/sqs"
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/ssm"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
@@ -21,6 +23,7 @@ type StatelessComponent struct {
 
 type StatefulResource struct {
 	TwitchEmotesEventsStoreTable *dynamodb.Table
+	TwitchEmotesProjectionsTable *dynamodb.Table
 }
 
 func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.ResourceOption, applicationConfig stack.ApplicationConfig, statefulResource StatefulResource) (*StatelessComponent, error) {
@@ -83,6 +86,15 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 					pulumi.String("dynamodb:ConditionCheckItem"),
 					pulumi.String("dynamodb:PutItem"),
 					pulumi.String("dynamodb:Query"),
+				},
+				Resources: pulumi.StringArray{
+					statefulResource.TwitchEmotesEventsStoreTable.Arn,
+				},
+			},
+			&iam.GetPolicyDocumentStatementArgs{
+				Effect: pulumi.String("Allow"),
+				Actions: pulumi.StringArray{
+					pulumi.String("sqs:SendMessage"),
 				},
 				Resources: pulumi.StringArray{
 					statefulResource.TwitchEmotesEventsStoreTable.Arn,
@@ -186,6 +198,92 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 			RetryPolicy: &scheduler.ScheduleTargetRetryPolicyArgs{
 				MaximumEventAgeInSeconds: nil,
 				MaximumRetryAttempts:     pulumi.Int(0),
+			},
+		},
+	},
+		pulumi.Parent(component),
+		providerResource,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	emotesReadModelProducerDlq, err := sqs.NewQueue(ctx, "emotes-read-model-produce-dlq", &sqs.QueueArgs{
+		MaxMessageSize:          pulumi.Int(1048576),
+		MessageRetentionSeconds: pulumi.Int((time.Hour * 24 * 14) / time.Second),
+	},
+		pulumi.Parent(component),
+		providerResource,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	emotesReadModelProducer, err := components.NewLambda(ctx, "emotes-read-model-producer", &components.LambdaArgs{
+		Code: pulumi.NewAssetArchive(map[string]interface{}{
+			"bootstrap": pulumi.NewFileAsset("../dist/emotes-read-model-producer/bootstrap"),
+		}),
+		Environment: map[string]pulumi.StringInput{
+			"EVENTS_PROJECTION_TABLE_NAME": pulumi.StringInput(statefulResource.TwitchEmotesProjectionsTable.Name),
+		},
+		PolicyStatements: iam.GetPolicyDocumentStatementArray{
+			&iam.GetPolicyDocumentStatementArgs{
+				Effect: pulumi.String("Allow"),
+				Actions: pulumi.StringArray{
+					pulumi.String("dynamodb:GetRecords"),
+					pulumi.String("dynamodb:GetShardIterator"),
+					pulumi.String("dynamodb:DescribeStream"),
+					pulumi.String("dynamodb:ListStreams"),
+				},
+				Resources: pulumi.StringArray{
+					statefulResource.TwitchEmotesEventsStoreTable.StreamArn,
+				},
+			},
+			&iam.GetPolicyDocumentStatementArgs{
+				Effect: pulumi.String("Allow"),
+				Actions: pulumi.StringArray{
+					pulumi.String("sqs:SendMessage"),
+				},
+				Resources: pulumi.StringArray{
+					emotesReadModelProducerDlq.Arn,
+				},
+			},
+			&iam.GetPolicyDocumentStatementArgs{
+				Effect: pulumi.String("Allow"),
+				Actions: pulumi.StringArray{
+					pulumi.String("dynamodb:ConditionCheckItem"),
+					pulumi.String("dynamodb:PutItem"),
+					pulumi.String("dynamodb:UpdateItem"),
+				},
+				Resources: pulumi.StringArray{
+					statefulResource.TwitchEmotesProjectionsTable.Arn,
+				},
+			},
+		},
+	},
+		pulumi.Parent(component),
+		providerResource,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = lambda.NewEventSourceMapping(ctx, "emotes-read-model-producer-mapping", &lambda.EventSourceMappingArgs{
+		EventSourceArn:       pulumi.StringInput(statefulResource.TwitchEmotesEventsStoreTable.StreamArn),
+		FunctionName:         pulumi.StringInput(emotesReadModelProducer.Function.Name),
+		StartingPosition:     pulumi.String("TRIM_HORIZON"),
+		BatchSize:            pulumi.Int(1),
+		MaximumRetryAttempts: pulumi.Int(3),
+		DestinationConfig: &lambda.EventSourceMappingDestinationConfigArgs{
+			OnFailure: &lambda.EventSourceMappingDestinationConfigOnFailureArgs{
+				DestinationArn: pulumi.StringInput(emotesReadModelProducerDlq.Arn),
+			},
+		},
+		FilterCriteria: &lambda.EventSourceMappingFilterCriteriaArgs{
+			Filters: &lambda.EventSourceMappingFilterCriteriaFilterArray{
+				&lambda.EventSourceMappingFilterCriteriaFilterArgs{
+					Pattern: pulumi.String("{ \"eventName\" : [\"INSERT\"] }"),
+				},
 			},
 		},
 	},

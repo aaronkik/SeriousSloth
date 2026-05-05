@@ -9,7 +9,8 @@ import (
 
 type StatefulComponent struct {
 	pulumi.ResourceState
-	TwitchEmotesEmotesEventStoreTable *dynamodb.Table
+	TwitchEmotesEventStoreTable  *dynamodb.Table
+	TwitchEmotesProjectionsTable *dynamodb.Table
 }
 
 func NewStatefulComponent(ctx *pulumi.Context, providerResource pulumi.ResourceOption) (*StatefulComponent, error) {
@@ -35,6 +36,8 @@ func NewStatefulComponent(ctx *pulumi.Context, providerResource pulumi.ResourceO
 			},
 		},
 		DeletionProtectionEnabled: pulumi.BoolPtr(stack.IsProduction(ctx.Stack())),
+		StreamEnabled:             pulumi.BoolPtr(true),
+		StreamViewType:            pulumi.String("NEW_IMAGE"),
 	},
 		pulumi.Parent(component),
 		providerResource,
@@ -43,7 +46,31 @@ func NewStatefulComponent(ctx *pulumi.Context, providerResource pulumi.ResourceO
 		return nil, err
 	}
 
-	component.TwitchEmotesEmotesEventStoreTable = twitchEmotesEventStoreTable
+	twitchEmotesProjectionsTable, err := dynamodb.NewTable(ctx, "twitch-emotes-projections", &dynamodb.TableArgs{
+		BillingMode: pulumi.String("PAY_PER_REQUEST"),
+		HashKey:     pulumi.String("PK"),
+		RangeKey:    pulumi.String("SK"),
+		Attributes: dynamodb.TableAttributeArray{
+			&dynamodb.TableAttributeArgs{
+				Name: pulumi.String("PK"),
+				Type: pulumi.String("S"),
+			},
+			&dynamodb.TableAttributeArgs{
+				Name: pulumi.String("SK"),
+				Type: pulumi.String("S"),
+			},
+		},
+		DeletionProtectionEnabled: pulumi.BoolPtr(stack.IsProduction(ctx.Stack())),
+	},
+		pulumi.Parent(component),
+		providerResource,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	component.TwitchEmotesEventStoreTable = twitchEmotesEventStoreTable
+	component.TwitchEmotesProjectionsTable = twitchEmotesProjectionsTable
 
 	return component, nil
 }

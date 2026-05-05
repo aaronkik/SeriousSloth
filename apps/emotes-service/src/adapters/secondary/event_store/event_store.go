@@ -120,14 +120,6 @@ func loadEvents(ctx context.Context, aggregateId string) ([]EmoteServiceEvent, e
 	return items, nil
 }
 
-type ConcurrencyConflictError struct {
-	Sequence int
-}
-
-func (e *ConcurrencyConflictError) Error() string {
-	return fmt.Sprintf("concurrency conflict at sequence %d", e.Sequence)
-}
-
 func AppendEvents(ctx context.Context, events []EmoteServiceEvent) error {
 	eventsLength := len(events)
 	if eventsLength == 0 {
@@ -207,7 +199,7 @@ func DecideSyncEvents(aggregateId string, emotesAggregate *EmotesAggregate, glob
 		events = append(events, createEmoteEvent(createEmoteEventInput{
 			AggregateId: aggregateId,
 			Sequence:    currentSequence,
-			CreatedAt:   time.Now().UTC().Format(time.RFC3339),
+			CreatedAt:   time.Now().UTC().Format(time.RFC3339Nano),
 			EventName:   "EmoteRemoved",
 			EmoteId:     id,
 			Emote:       nil,
@@ -233,7 +225,7 @@ func DecideSyncEvents(aggregateId string, emotesAggregate *EmotesAggregate, glob
 		events = append(events, createEmoteEvent(createEmoteEventInput{
 			AggregateId: aggregateId,
 			Sequence:    currentSequence,
-			CreatedAt:   time.Now().UTC().Format(time.RFC3339),
+			CreatedAt:   time.Now().UTC().Format(time.RFC3339Nano),
 			EventName:   "EmoteAdded",
 			EmoteId:     id,
 			Emote:       emote,
