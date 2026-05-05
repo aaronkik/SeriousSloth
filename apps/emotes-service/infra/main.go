@@ -91,12 +91,14 @@ func main() {
 			return err
 		}
 
+		ctx.Export("apiInvokeUrl", statelessComponent.ApiInvokeUrl)
+		ctx.Export("apiKeyId", statelessComponent.ApiKeyId)
+
 		if integrationComponent != nil {
 			ctx.Export("syncGlobalEmotesLambdaName", statelessComponent.SyncGlobalEmotesFunction.Name)
 			ctx.Export("twitchEmotesEventStoreTable", statefulComponent.TwitchEmotesEventStoreTable.Name)
 			ctx.Export("twitchEmotesProjectionsTable", statefulComponent.TwitchEmotesProjectionsTable.Name)
 			ctx.Export("mockTwitchResponsesTableName", integrationComponent.MockTwitchResponsesTable.Name)
-
 		}
 
 		return nil
