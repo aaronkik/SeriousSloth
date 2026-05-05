@@ -207,7 +207,7 @@ func DecideSyncEvents(aggregateId string, emotesAggregate *EmotesAggregate, glob
 		events = append(events, createEmoteEvent(createEmoteEventInput{
 			AggregateId: aggregateId,
 			Sequence:    currentSequence,
-			CreatedAt:   time.Now().UTC().Format(time.RFC3339),
+			CreatedAt:   time.Now().UTC().Format(time.RFC3339Nano),
 			EventName:   "EmoteRemoved",
 			EmoteId:     id,
 			Emote:       nil,
@@ -233,7 +233,7 @@ func DecideSyncEvents(aggregateId string, emotesAggregate *EmotesAggregate, glob
 		events = append(events, createEmoteEvent(createEmoteEventInput{
 			AggregateId: aggregateId,
 			Sequence:    currentSequence,
-			CreatedAt:   time.Now().UTC().Format(time.RFC3339),
+			CreatedAt:   time.Now().UTC().Format(time.RFC3339Nano),
 			EventName:   "EmoteAdded",
 			EmoteId:     id,
 			Emote:       emote,

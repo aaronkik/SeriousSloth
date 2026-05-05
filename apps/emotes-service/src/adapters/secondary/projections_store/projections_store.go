@@ -43,7 +43,7 @@ type MetadataItem struct {
 
 func createMetadataItem(emoteEvent event_store.EmoteServiceEvent) types.TransactWriteItem {
 	tableName := environment.GetOrFatal("EVENTS_PROJECTION_TABLE_NAME")
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := time.Now().UTC().Format(time.RFC3339Nano)
 
 	metadataItem := types.TransactWriteItem{
 		Update: &types.Update{
@@ -92,7 +92,7 @@ func createProjectionItem(ctx context.Context, emoteEvent event_store.EmoteServi
 	switch emoteEvent.EventName {
 	case "EmoteAdded":
 		{
-			now := time.Now().UTC().Format(time.RFC3339)
+			now := time.Now().UTC().Format(time.RFC3339Nano)
 			projectionItem := ProjectionItem{
 				PK:        emoteEvent.AggregateId,
 				SK:        fmt.Sprintf("EMOTE#%s", emoteEvent.EmoteId),
@@ -123,7 +123,7 @@ func createProjectionItem(ctx context.Context, emoteEvent event_store.EmoteServi
 		}
 	case "EmoteRemoved":
 		{
-			now := time.Now().UTC().Format(time.RFC3339)
+			now := time.Now().UTC().Format(time.RFC3339Nano)
 			transactItem := types.TransactWriteItem{
 				Update: &types.Update{
 					TableName: aws.String(tableName),
