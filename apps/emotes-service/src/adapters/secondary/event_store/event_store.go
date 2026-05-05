@@ -53,7 +53,6 @@ type EmoteServiceEvent struct {
 	CreatedAt   string                  `dynamodbav:"__createdAt"`
 	Emote       *EmoteServiceEventEmote `dynamodbav:"emote"`
 	EmoteId     string                  `dynamodbav:"emoteId"`
-	EventId     string                  `dynamodbav:"eventId"`
 	EventName   string                  `dynamodbav:"eventName"`
 	Id          string                  `dynamodbav:"id"`
 	Kind        string                  `dynamodbav:"kind"`
@@ -267,7 +266,6 @@ func createEmoteEvent(eventInput createEmoteEventInput) EmoteServiceEvent {
 		CreatedAt:   eventInput.CreatedAt,
 		Emote:       eventInput.Emote,
 		EmoteId:     eventInput.EmoteId,
-		EventId:     fmt.Sprintf("%s#%s", pk, sk),
 		EventName:   eventInput.EventName,
 		Id:          generateId(),
 		Kind:        "EVENT",
