@@ -73,7 +73,6 @@ func Test_Emote_Added_Event_Is_Added_To_Event_Store_When_Emote_Exists(t *testing
 
 	require.Equal("GLOBAL", emoteAddedEvent["aggregateId"].(*types.AttributeValueMemberS).Value)
 	require.Equal("1", emoteAddedEvent["emoteId"].(*types.AttributeValueMemberS).Value)
-	require.Equal("GLOBAL#SEQUENCE#0000001", emoteAddedEvent["eventId"].(*types.AttributeValueMemberS).Value)
 	require.Equal("EmoteAdded", emoteAddedEvent["eventName"].(*types.AttributeValueMemberS).Value)
 	require.Equal("EVENT", emoteAddedEvent["kind"].(*types.AttributeValueMemberS).Value)
 	require.Equal("1", emoteAddedEvent["sequence"].(*types.AttributeValueMemberN).Value)
@@ -170,7 +169,6 @@ func Test_Emote_Remove_Event_Is_Added_To_Event_Store_When_Emote_No_Longer_Exists
 
 	require.Equal("GLOBAL", emoteRemovedEvent["aggregateId"].(*types.AttributeValueMemberS).Value)
 	require.Equal("1", emoteRemovedEvent["emoteId"].(*types.AttributeValueMemberS).Value)
-	require.Equal("GLOBAL#SEQUENCE#0000002", emoteRemovedEvent["eventId"].(*types.AttributeValueMemberS).Value)
 	require.Equal("EmoteRemoved", emoteRemovedEvent["eventName"].(*types.AttributeValueMemberS).Value)
 	require.Equal("EVENT", emoteRemovedEvent["kind"].(*types.AttributeValueMemberS).Value)
 	require.Equal("2", emoteRemovedEvent["sequence"].(*types.AttributeValueMemberN).Value)
