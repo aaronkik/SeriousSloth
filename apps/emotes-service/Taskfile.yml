@@ -108,3 +108,6 @@ tasks:
       - task: create
       - task: deploy
       - pulumi esc run emotes-service/dev -- go test -tags integration -v -count=1 ./...
+
+  generate-api:
+    cmd: tsp compile ./infra/api

@@ -15,5 +15,12 @@
     "deploy:prod": "task deploy:prod",
     "destroy:local": "task destroy:local",
     "destroy:ci": "task destroy:ci"
+  },
+  "devDependencies": {
+    "@typespec/compiler": "1.11.0",
+    "@typespec/http": "1.11.0",
+    "@typespec/rest": "0.81.0",
+    "@typespec/openapi": "1.11.0",
+    "@typespec/openapi3": "1.11.0"
   }
 }
