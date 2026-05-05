@@ -7,6 +7,7 @@ import (
 	"emotes-service/src/tests/helpers"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -17,25 +18,37 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestEmotesEventStore(t *testing.T) {
-	assert := assert.New(t)
+var ctx = context.Background()
+var ddbClient *dynamodb.Client
+var lambdaClient *awslambda.Client
+
+var syncLambdaName string
+var emotesEventStoreTableName string
+var emotesProjectionsTable string
+var mockTwitchResponsesTableName string
+
+var testStartTime = time.Now()
+var emoteAddedEventId string
+
+func Test_Emote_Added_Event_Is_Added_To_Event_Store_When_Emote_Exists(t *testing.T) {
 	require := require.New(t)
 
-	syncLambdaName := helpers.GetPulumiExport(t, "syncGlobalEmotesLambdaName")
-	emotesEventStoreTableName := helpers.GetPulumiExport(t, "twitchEmotesEventStoreTable")
-	mockTwitchResponsesTableName := helpers.GetPulumiExport(t, "mockTwitchResponsesTableName")
+	syncLambdaName = helpers.GetPulumiExport(t, "syncGlobalEmotesLambdaName")
+	emotesEventStoreTableName = helpers.GetPulumiExport(t, "twitchEmotesEventStoreTable")
+	mockTwitchResponsesTableName = helpers.GetPulumiExport(t, "mockTwitchResponsesTableName")
+	emotesProjectionsTable = helpers.GetPulumiExport(t, "twitchEmotesProjectionsTable")
 
-	ctx := context.Background()
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		t.Fatalf("failed to load AWS config: %v", err)
 	}
 
-	ddbClient := dynamodb.NewFromConfig(cfg)
-	lambdaClient := awslambda.NewFromConfig(cfg)
+	ddbClient = dynamodb.NewFromConfig(cfg)
+	lambdaClient = awslambda.NewFromConfig(cfg)
 
 	seedMockResponses(t, ctx, ddbClient, mockTwitchResponsesTableName)
 	clearTable(t, ctx, ddbClient, emotesEventStoreTableName)
+	clearTable(t, ctx, ddbClient, emotesProjectionsTable)
 
 	triggerLambda(t, ctx, lambdaClient, syncLambdaName)
 
@@ -52,47 +65,93 @@ func TestEmotesEventStore(t *testing.T) {
 
 	require.Lenf(queryOutput.Items, 1, "expected 1 item, got %d", len(queryOutput.Items))
 
-	emoteServiceEvent := queryOutput.Items[0]
+	emoteAddedEvent := queryOutput.Items[0]
+	emoteAddedEventId = emoteAddedEvent["id"].(*types.AttributeValueMemberS).Value
 
-	assert.Equalf(emoteServiceEvent["SK"].(*types.AttributeValueMemberS).Value, "SEQUENCE#0000001", "Event is out of sequence")
-	assert.Regexp(`^es_.+$`, emoteServiceEvent["id"].(*types.AttributeValueMemberS).Value)
+	require.Equalf(emoteAddedEvent["SK"].(*types.AttributeValueMemberS).Value, "SEQUENCE#0000001", "Event is out of sequence")
+	require.Regexp(`^es_.+$`, emoteAddedEventId)
 
-	assert.Equal("GLOBAL", emoteServiceEvent["aggregateId"].(*types.AttributeValueMemberS).Value)
-	assert.Equal("1", emoteServiceEvent["emoteId"].(*types.AttributeValueMemberS).Value)
-	assert.Equal("GLOBAL#SEQUENCE#0000001", emoteServiceEvent["eventId"].(*types.AttributeValueMemberS).Value)
-	assert.Equal("EmoteAdded", emoteServiceEvent["eventName"].(*types.AttributeValueMemberS).Value)
-	assert.Equal("EVENT", emoteServiceEvent["kind"].(*types.AttributeValueMemberS).Value)
-	assert.Equal("1", emoteServiceEvent["sequence"].(*types.AttributeValueMemberN).Value)
+	require.Equal("GLOBAL", emoteAddedEvent["aggregateId"].(*types.AttributeValueMemberS).Value)
+	require.Equal("1", emoteAddedEvent["emoteId"].(*types.AttributeValueMemberS).Value)
+	require.Equal("GLOBAL#SEQUENCE#0000001", emoteAddedEvent["eventId"].(*types.AttributeValueMemberS).Value)
+	require.Equal("EmoteAdded", emoteAddedEvent["eventName"].(*types.AttributeValueMemberS).Value)
+	require.Equal("EVENT", emoteAddedEvent["kind"].(*types.AttributeValueMemberS).Value)
+	require.Equal("1", emoteAddedEvent["sequence"].(*types.AttributeValueMemberN).Value)
 
-	emote := emoteServiceEvent["emote"].(*types.AttributeValueMemberM).Value
-	assert.Equal("1", emote["id"].(*types.AttributeValueMemberS).Value)
-	assert.Equal(":)", emote["name"].(*types.AttributeValueMemberS).Value)
+	createdAt, err := time.Parse(time.RFC3339Nano, emoteAddedEvent["__createdAt"].(*types.AttributeValueMemberS).Value)
+	require.NoError(err)
+	require.True(testStartTime.Before(createdAt))
 
-	format := emote["format"].(*types.AttributeValueMemberL).Value
-	require.Len(format, 1)
-	assert.Equal("static", format[0].(*types.AttributeValueMemberS).Value)
+	assertEmote(t, require, emoteAddedEvent["emote"].(*types.AttributeValueMemberM))
+}
 
-	scale := emote["scale"].(*types.AttributeValueMemberL).Value
-	require.Len(scale, 3)
-	assert.Equal("1.0", scale[0].(*types.AttributeValueMemberS).Value)
-	assert.Equal("2.0", scale[1].(*types.AttributeValueMemberS).Value)
-	assert.Equal("3.0", scale[2].(*types.AttributeValueMemberS).Value)
+func Test_Added_Emote_Is_Added_To_Projection(t *testing.T) {
+	require := require.New(t)
 
-	themeMode := emote["theme_mode"].(*types.AttributeValueMemberL).Value
-	require.Len(themeMode, 2)
-	assert.Equal("light", themeMode[0].(*types.AttributeValueMemberS).Value)
-	assert.Equal("dark", themeMode[1].(*types.AttributeValueMemberS).Value)
+	var projectionQueryOutput *dynamodb.QueryOutput
 
-	images := emote["images"].(*types.AttributeValueMemberM).Value
-	assert.Equal("https://static-cdn.jtvnw.net/emoticons/v2/1/static/light/1.0", images["url_1x"].(*types.AttributeValueMemberS).Value)
-	assert.Equal("https://static-cdn.jtvnw.net/emoticons/v2/1/static/light/2.0", images["url_2x"].(*types.AttributeValueMemberS).Value)
-	assert.Equal("https://static-cdn.jtvnw.net/emoticons/v2/1/static/light/3.0", images["url_4x"].(*types.AttributeValueMemberS).Value)
+	require.EventuallyWithT(func(c *assert.CollectT) {
+		queryOutput, err := ddbClient.Query(ctx, &dynamodb.QueryInput{
+			TableName:              aws.String(emotesProjectionsTable),
+			KeyConditionExpression: aws.String("PK = :pk"),
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":pk": &types.AttributeValueMemberS{Value: "GLOBAL"},
+			},
+		})
+		projectionQueryOutput = queryOutput
 
-	// Remove the emote from the Twitch response
+		if err != nil {
+			t.Fatalf("failed to query DynamoDB: %v", err)
+		}
+
+		assert.Len(c, projectionQueryOutput.Items, 2, len(projectionQueryOutput.Items))
+	}, 60*time.Second, 2*time.Second)
+
+	emoteProjection := projectionQueryOutput.Items[0]
+
+	require.Equal("EMOTE#1", emoteProjection["SK"].(*types.AttributeValueMemberS).Value)
+	require.Regexp(`^es_prj_.+$`, emoteProjection["id"].(*types.AttributeValueMemberS).Value)
+
+	require.Equal("ACTIVE", emoteProjection["status"].(*types.AttributeValueMemberS).Value)
+	require.Equal("1", emoteProjection["emoteId"].(*types.AttributeValueMemberS).Value)
+	require.Equal(true, emoteProjection["removedAt"].(*types.AttributeValueMemberNULL).Value)
+
+	require.Equal(emoteAddedEventId, emoteProjection["__updatedBy"].(*types.AttributeValueMemberS).Value)
+
+	createdAt, err := time.Parse(time.RFC3339Nano, emoteProjection["__createdAt"].(*types.AttributeValueMemberS).Value)
+	require.NoError(err)
+	require.True(testStartTime.Before(createdAt))
+
+	updatedAt, err := time.Parse(time.RFC3339Nano, emoteProjection["__updatedAt"].(*types.AttributeValueMemberS).Value)
+	require.NoError(err)
+	require.True(testStartTime.Before(updatedAt))
+
+	assertEmote(t, require, emoteProjection["emote"].(*types.AttributeValueMemberM))
+
+	metadataProjection := projectionQueryOutput.Items[1]
+
+	require.Equal("METADATA", metadataProjection["SK"].(*types.AttributeValueMemberS).Value)
+	require.Equal("1", metadataProjection["currentSequence"].(*types.AttributeValueMemberN).Value)
+	require.Equal(emoteAddedEventId, metadataProjection["__updatedBy"].(*types.AttributeValueMemberS).Value)
+
+	createdAt, err = time.Parse(time.RFC3339Nano, metadataProjection["__createdAt"].(*types.AttributeValueMemberS).Value)
+	require.NoError(err)
+	require.True(testStartTime.Before(createdAt))
+
+	updatedAt, err = time.Parse(time.RFC3339Nano, metadataProjection["__updatedAt"].(*types.AttributeValueMemberS).Value)
+	require.NoError(err)
+	require.True(testStartTime.Before(updatedAt))
+}
+
+var emoteRemovedEventId string
+
+func Test_Emote_Remove_Event_Is_Added_To_Event_Store_When_Emote_No_Longer_Exists(t *testing.T) {
+	require := require.New(t)
+
 	updateGlobalEmotesResponse(t, ctx, ddbClient, mockTwitchResponsesTableName, "../fixtures/twitch-global-emotes-empty-response.json")
 	triggerLambda(t, ctx, lambdaClient, syncLambdaName)
 
-	queryOutput, err = ddbClient.Query(ctx, &dynamodb.QueryInput{
+	queryOutput, err := ddbClient.Query(ctx, &dynamodb.QueryInput{
 		TableName:              aws.String(emotesEventStoreTableName),
 		KeyConditionExpression: aws.String("PK = :pk"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
@@ -105,19 +164,80 @@ func TestEmotesEventStore(t *testing.T) {
 
 	require.Len(queryOutput.Items, 2)
 	emoteRemovedEvent := queryOutput.Items[1]
+	emoteRemovedEventId = emoteRemovedEvent["id"].(*types.AttributeValueMemberS).Value
 
-	assert.Equalf(emoteRemovedEvent["SK"].(*types.AttributeValueMemberS).Value, "SEQUENCE#0000002", "Event is out of sequence")
+	require.Equalf(emoteRemovedEvent["SK"].(*types.AttributeValueMemberS).Value, "SEQUENCE#0000002", "Event is out of sequence")
 
-	assert.Equal("GLOBAL", emoteRemovedEvent["aggregateId"].(*types.AttributeValueMemberS).Value)
-	assert.Equal("1", emoteRemovedEvent["emoteId"].(*types.AttributeValueMemberS).Value)
-	assert.Equal("GLOBAL#SEQUENCE#0000002", emoteRemovedEvent["eventId"].(*types.AttributeValueMemberS).Value)
-	assert.Equal("EmoteRemoved", emoteRemovedEvent["eventName"].(*types.AttributeValueMemberS).Value)
-	assert.Equal("EVENT", emoteRemovedEvent["kind"].(*types.AttributeValueMemberS).Value)
-	assert.Equal("2", emoteRemovedEvent["sequence"].(*types.AttributeValueMemberN).Value)
+	require.Equal("GLOBAL", emoteRemovedEvent["aggregateId"].(*types.AttributeValueMemberS).Value)
+	require.Equal("1", emoteRemovedEvent["emoteId"].(*types.AttributeValueMemberS).Value)
+	require.Equal("GLOBAL#SEQUENCE#0000002", emoteRemovedEvent["eventId"].(*types.AttributeValueMemberS).Value)
+	require.Equal("EmoteRemoved", emoteRemovedEvent["eventName"].(*types.AttributeValueMemberS).Value)
+	require.Equal("EVENT", emoteRemovedEvent["kind"].(*types.AttributeValueMemberS).Value)
+	require.Equal("2", emoteRemovedEvent["sequence"].(*types.AttributeValueMemberN).Value)
 
 	emoteRemovedEventEmote := emoteRemovedEvent["emote"].(*types.AttributeValueMemberNULL).Value
-	assert.True(emoteRemovedEventEmote)
+	require.True(emoteRemovedEventEmote)
+}
 
+func Test_Emote_Remove_Event_Is_Reflected_In_Projection(t *testing.T) {
+	require := require.New(t)
+
+	var projectionQueryOutput *dynamodb.QueryOutput
+	var metadataProjection map[string]types.AttributeValue
+
+	require.EventuallyWithT(func(c *assert.CollectT) {
+		queryOutput, err := ddbClient.Query(ctx, &dynamodb.QueryInput{
+			TableName:              aws.String(emotesProjectionsTable),
+			KeyConditionExpression: aws.String("PK = :pk"),
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":pk": &types.AttributeValueMemberS{Value: "GLOBAL"},
+			},
+		})
+		projectionQueryOutput = queryOutput
+
+		if err != nil {
+			t.Fatalf("failed to query DynamoDB: %v", err)
+		}
+
+		metadataProjection = projectionQueryOutput.Items[1]
+
+		assert.Equal(c, "METADATA", metadataProjection["SK"].(*types.AttributeValueMemberS).Value)
+		assert.Equal(c, "2", metadataProjection["currentSequence"].(*types.AttributeValueMemberN).Value)
+	}, 60*time.Second, 2*time.Second)
+
+	emoteProjection := projectionQueryOutput.Items[0]
+
+	require.Equal("EMOTE#1", emoteProjection["SK"].(*types.AttributeValueMemberS).Value)
+	require.Regexp(`^es_prj_.+$`, emoteProjection["id"].(*types.AttributeValueMemberS).Value)
+
+	require.Equal("REMOVED", emoteProjection["status"].(*types.AttributeValueMemberS).Value)
+	require.Equal("1", emoteProjection["emoteId"].(*types.AttributeValueMemberS).Value)
+
+	removedAt, err := time.Parse(time.RFC3339Nano, emoteProjection["removedAt"].(*types.AttributeValueMemberS).Value)
+	require.NoError(err)
+	require.True(testStartTime.Before(removedAt))
+
+	require.Equal(emoteRemovedEventId, emoteProjection["__updatedBy"].(*types.AttributeValueMemberS).Value)
+
+	createdAt, err := time.Parse(time.RFC3339Nano, emoteProjection["__createdAt"].(*types.AttributeValueMemberS).Value)
+	require.NoError(err)
+
+	updatedAt, err := time.Parse(time.RFC3339Nano, emoteProjection["__updatedAt"].(*types.AttributeValueMemberS).Value)
+	require.NoError(err)
+	require.True(createdAt.Before(updatedAt))
+
+	assertEmote(t, require, emoteProjection["emote"].(*types.AttributeValueMemberM))
+
+	require.Equal(emoteRemovedEventId, metadataProjection["__updatedBy"].(*types.AttributeValueMemberS).Value)
+
+	createdAt, err = time.Parse(time.RFC3339Nano, metadataProjection["__createdAt"].(*types.AttributeValueMemberS).Value)
+	require.NoError(err)
+	require.True(testStartTime.Before(createdAt))
+
+	updatedAt, err = time.Parse(time.RFC3339Nano, metadataProjection["__updatedAt"].(*types.AttributeValueMemberS).Value)
+	require.NoError(err)
+	require.True(testStartTime.Before(updatedAt))
+	require.True(createdAt.Before(updatedAt))
 }
 
 func clearTable(t *testing.T, ctx context.Context, client *dynamodb.Client, tableName string) {
@@ -151,6 +271,8 @@ func clearTable(t *testing.T, ctx context.Context, client *dynamodb.Client, tabl
 		}
 		lastKey = scanOutput.LastEvaluatedKey
 	}
+
+	t.Logf("cleared table %s", tableName)
 }
 
 func seedMockResponses(t *testing.T, ctx context.Context, client *dynamodb.Client, tableName string) {
@@ -186,6 +308,8 @@ func seedMockResponses(t *testing.T, ctx context.Context, client *dynamodb.Clien
 			t.Fatalf("failed to seed mock response PK=%s: %v", item.pk, err)
 		}
 	}
+
+	t.Logf("seeded mock responses to table %s", tableName)
 }
 
 func updateGlobalEmotesResponse(t *testing.T, ctx context.Context, client *dynamodb.Client, tableName string, fixturePath string) {
@@ -228,41 +352,31 @@ func triggerLambda(t *testing.T, ctx context.Context, client *awslambda.Client, 
 	}
 }
 
-func TestGlobalEmotesProjection(t *testing.T) {
-	//assert := assert.New(t)
-	require := require.New(t)
+func assertEmote(t *testing.T, require *require.Assertions, emoteAttr *types.AttributeValueMemberM) {
+	t.Helper()
 
-	syncLambdaName := helpers.GetPulumiExport(t, "syncGlobalEmotesLambdaName")
-	emotesEventStoreTableName := helpers.GetPulumiExport(t, "twitchEmotesEventStoreTable")
-	emotesProjectionsTable := helpers.GetPulumiExport(t, "twitchEmotesProjectionsTable")
-	mockTwitchResponsesTableName := helpers.GetPulumiExport(t, "mockTwitchResponsesTableName")
+	emote := emoteAttr.Value
+	require.Equal("1", emote["id"].(*types.AttributeValueMemberS).Value)
+	require.Equal(":)", emote["name"].(*types.AttributeValueMemberS).Value)
 
-	ctx := context.Background()
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		t.Fatalf("failed to load AWS config: %v", err)
-	}
+	format := emote["format"].(*types.AttributeValueMemberL).Value
+	require.Len(format, 1)
+	require.Equal("static", format[0].(*types.AttributeValueMemberS).Value)
 
-	ddbClient := dynamodb.NewFromConfig(cfg)
-	lambdaClient := awslambda.NewFromConfig(cfg)
+	scale := emote["scale"].(*types.AttributeValueMemberL).Value
+	require.Len(scale, 3)
+	require.Equal("1.0", scale[0].(*types.AttributeValueMemberS).Value)
+	require.Equal("2.0", scale[1].(*types.AttributeValueMemberS).Value)
+	require.Equal("3.0", scale[2].(*types.AttributeValueMemberS).Value)
 
-	seedMockResponses(t, ctx, ddbClient, mockTwitchResponsesTableName)
-	clearTable(t, ctx, ddbClient, emotesEventStoreTableName)
-	clearTable(t, ctx, ddbClient, emotesProjectionsTable)
+	themeMode := emote["theme_mode"].(*types.AttributeValueMemberL).Value
+	require.Len(themeMode, 2)
+	require.Equal("light", themeMode[0].(*types.AttributeValueMemberS).Value)
+	require.Equal("dark", themeMode[1].(*types.AttributeValueMemberS).Value)
 
-	triggerLambda(t, ctx, lambdaClient, syncLambdaName)
-
-	queryOutput, err := ddbClient.Query(ctx, &dynamodb.QueryInput{
-		TableName:              aws.String(emotesProjectionsTable),
-		KeyConditionExpression: aws.String("PK = :pk"),
-		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":pk": &types.AttributeValueMemberS{Value: "GLOBAL"},
-		},
-	})
-	if err != nil {
-		t.Fatalf("failed to query DynamoDB: %v", err)
-	}
-
-	require.Lenf(queryOutput.Items, 1, "expected 1 item, got %d", len(queryOutput.Items))
+	images := emote["images"].(*types.AttributeValueMemberM).Value
+	require.Equal("https://static-cdn.jtvnw.net/emoticons/v2/1/static/light/1.0", images["url_1x"].(*types.AttributeValueMemberS).Value)
+	require.Equal("https://static-cdn.jtvnw.net/emoticons/v2/1/static/light/2.0", images["url_2x"].(*types.AttributeValueMemberS).Value)
+	require.Equal("https://static-cdn.jtvnw.net/emoticons/v2/1/static/light/3.0", images["url_4x"].(*types.AttributeValueMemberS).Value)
 
 }
