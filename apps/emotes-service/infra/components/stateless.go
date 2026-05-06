@@ -242,6 +242,7 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 		Environment: map[string]pulumi.StringInput{
 			"EVENTS_PROJECTION_TABLE_NAME": pulumi.StringInput(statefulResource.TwitchEmotesProjectionsTable.Name),
 		},
+		ReservedConcurrentExecutions: pulumi.Int(1),
 		PolicyStatements: iam.GetPolicyDocumentStatementArray{
 			&iam.GetPolicyDocumentStatementArgs{
 				Effect: pulumi.String("Allow"),
@@ -285,11 +286,12 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 	}
 
 	_, err = lambda.NewEventSourceMapping(ctx, "emotes-read-model-producer-mapping", &lambda.EventSourceMappingArgs{
-		EventSourceArn:       pulumi.StringInput(statefulResource.TwitchEmotesEventsStoreTable.StreamArn),
-		FunctionName:         pulumi.StringInput(emotesReadModelProducer.Function.Name),
-		StartingPosition:     pulumi.String("TRIM_HORIZON"),
-		BatchSize:            pulumi.Int(1),
-		MaximumRetryAttempts: pulumi.Int(3),
+		EventSourceArn:        pulumi.StringInput(statefulResource.TwitchEmotesEventsStoreTable.StreamArn),
+		FunctionName:          pulumi.StringInput(emotesReadModelProducer.Function.Name),
+		StartingPosition:      pulumi.String("TRIM_HORIZON"),
+		BatchSize:             pulumi.Int(1),
+		ParallelizationFactor: pulumi.Int(1),
+		MaximumRetryAttempts:  pulumi.Int(3),
 		DestinationConfig: &lambda.EventSourceMappingDestinationConfigArgs{
 			OnFailure: &lambda.EventSourceMappingDestinationConfigOnFailureArgs{
 				DestinationArn: pulumi.StringInput(emotesReadModelProducerDlq.Arn),
