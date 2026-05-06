@@ -11,11 +11,12 @@ import (
 )
 
 type LambdaArgs struct {
-	Code             pulumi.ArchiveInput
-	MemorySize       pulumi.IntPtrInput
-	Timeout          pulumi.IntPtrInput
-	Environment      pulumi.StringMap
-	PolicyStatements iam.GetPolicyDocumentStatementArray
+	Code                         pulumi.ArchiveInput
+	MemorySize                   pulumi.IntPtrInput
+	Timeout                      pulumi.IntPtrInput
+	ReservedConcurrentExecutions pulumi.IntPtrInput
+	Environment                  pulumi.StringMap
+	PolicyStatements             iam.GetPolicyDocumentStatementArray
 }
 
 type Lambda struct {
@@ -103,6 +104,11 @@ func NewLambda(ctx *pulumi.Context, name string, args *LambdaArgs, opts ...pulum
 		timeout = pulumi.Int(10)
 	}
 
+	reservedConcurrentExecutions := args.ReservedConcurrentExecutions
+	if reservedConcurrentExecutions == nil {
+		reservedConcurrentExecutions = pulumi.Int(-1)
+	}
+
 	logLevel := "INFO"
 	if stack.IsEphemeral(ctx.Stack()) {
 		logLevel = "DEBUG"
@@ -117,13 +123,14 @@ func NewLambda(ctx *pulumi.Context, name string, args *LambdaArgs, opts ...pulum
 	}
 
 	function, err := lambda.NewFunction(ctx, name, &lambda.FunctionArgs{
-		Role:        lambdaRole.Arn,
-		Runtime:     pulumi.String("provided.al2023"),
-		Code:        args.Code,
-		Handler:     pulumi.String("bootstrap"),
-		PackageType: pulumi.String("Zip"),
-		MemorySize:  memorySize,
-		Timeout:     timeout,
+		Role:                         lambdaRole.Arn,
+		Runtime:                      pulumi.String("provided.al2023"),
+		Code:                         args.Code,
+		Handler:                      pulumi.String("bootstrap"),
+		PackageType:                  pulumi.String("Zip"),
+		MemorySize:                   memorySize,
+		Timeout:                      timeout,
+		ReservedConcurrentExecutions: reservedConcurrentExecutions,
 		Environment: &lambda.FunctionEnvironmentArgs{
 			Variables: envVars,
 		},
