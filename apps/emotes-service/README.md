@@ -35,6 +35,10 @@ task deploy
 task destroy:local
 ```
 
+## Architecture
+
+![Architecture](./docs/emotes-service-architecture.svg)
+
 ## Configuration
 
 Configurations can be found from the following locations:
