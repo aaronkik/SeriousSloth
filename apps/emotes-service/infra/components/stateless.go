@@ -242,7 +242,6 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 		Environment: map[string]pulumi.StringInput{
 			"EVENTS_PROJECTION_TABLE_NAME": pulumi.StringInput(statefulResource.TwitchEmotesProjectionsTable.Name),
 		},
-		ReservedConcurrentExecutions: pulumi.Int(1),
 		PolicyStatements: iam.GetPolicyDocumentStatementArray{
 			&iam.GetPolicyDocumentStatementArgs{
 				Effect: pulumi.String("Allow"),
@@ -268,8 +267,6 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 			&iam.GetPolicyDocumentStatementArgs{
 				Effect: pulumi.String("Allow"),
 				Actions: pulumi.StringArray{
-					pulumi.String("dynamodb:ConditionCheckItem"),
-					pulumi.String("dynamodb:PutItem"),
 					pulumi.String("dynamodb:UpdateItem"),
 				},
 				Resources: pulumi.StringArray{
@@ -291,7 +288,7 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 		StartingPosition:      pulumi.String("TRIM_HORIZON"),
 		BatchSize:             pulumi.Int(1),
 		ParallelizationFactor: pulumi.Int(1),
-		MaximumRetryAttempts:  pulumi.Int(3),
+		MaximumRetryAttempts:  pulumi.Int(-1),
 		DestinationConfig: &lambda.EventSourceMappingDestinationConfigArgs{
 			OnFailure: &lambda.EventSourceMappingDestinationConfigOnFailureArgs{
 				DestinationArn: pulumi.StringInput(emotesReadModelProducerDlq.Arn),

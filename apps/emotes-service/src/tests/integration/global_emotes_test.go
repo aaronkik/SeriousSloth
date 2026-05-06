@@ -127,7 +127,7 @@ func Test_Added_Emote_Is_Added_To_Projection(t *testing.T) {
 			t.Fatalf("failed to query DynamoDB: %v", err)
 		}
 
-		assert.Len(c, projectionQueryOutput.Items, 2, len(projectionQueryOutput.Items))
+		assert.Len(c, projectionQueryOutput.Items, 1, len(projectionQueryOutput.Items))
 	}, 60*time.Second, 2*time.Second)
 
 	emoteProjection := projectionQueryOutput.Items[0]
@@ -138,6 +138,7 @@ func Test_Added_Emote_Is_Added_To_Projection(t *testing.T) {
 	require.Equal("ACTIVE", emoteProjection["status"].(*types.AttributeValueMemberS).Value)
 	require.Equal("1", emoteProjection["emoteId"].(*types.AttributeValueMemberS).Value)
 	require.Equal(true, emoteProjection["removedAt"].(*types.AttributeValueMemberNULL).Value)
+	require.Equal("1", emoteProjection["__lastEventSequence"].(*types.AttributeValueMemberN).Value)
 
 	require.Equal(emoteAddedEventId, emoteProjection["__updatedBy"].(*types.AttributeValueMemberS).Value)
 
@@ -150,20 +151,6 @@ func Test_Added_Emote_Is_Added_To_Projection(t *testing.T) {
 	require.True(testStartTime.Before(updatedAt))
 
 	assertDDBEmote(t, require, emoteProjection["emote"].(*types.AttributeValueMemberM))
-
-	metadataProjection := projectionQueryOutput.Items[1]
-
-	require.Equal("METADATA", metadataProjection["SK"].(*types.AttributeValueMemberS).Value)
-	require.Equal("1", metadataProjection["currentSequence"].(*types.AttributeValueMemberN).Value)
-	require.Equal(emoteAddedEventId, metadataProjection["__updatedBy"].(*types.AttributeValueMemberS).Value)
-
-	createdAt, err = time.Parse(time.RFC3339Nano, metadataProjection["__createdAt"].(*types.AttributeValueMemberS).Value)
-	require.NoError(err)
-	require.True(testStartTime.Before(createdAt))
-
-	updatedAt, err = time.Parse(time.RFC3339Nano, metadataProjection["__updatedAt"].(*types.AttributeValueMemberS).Value)
-	require.NoError(err)
-	require.True(testStartTime.Before(updatedAt))
 }
 
 func Test_Api_Returns_Active_Emote_For_Channel(t *testing.T) {
@@ -266,7 +253,6 @@ func Test_Emote_Remove_Event_Is_Reflected_In_Projection(t *testing.T) {
 	require := require.New(t)
 
 	var projectionQueryOutput *dynamodb.QueryOutput
-	var metadataProjection map[string]types.AttributeValue
 
 	require.EventuallyWithT(func(c *assert.CollectT) {
 		queryOutput, err := ddbClient.Query(ctx, &dynamodb.QueryInput{
@@ -282,10 +268,13 @@ func Test_Emote_Remove_Event_Is_Reflected_In_Projection(t *testing.T) {
 			t.Fatalf("failed to query DynamoDB: %v", err)
 		}
 
-		metadataProjection = projectionQueryOutput.Items[1]
+		if !assert.Len(c, projectionQueryOutput.Items, 1) {
+			return
+		}
 
-		assert.Equal(c, "METADATA", metadataProjection["SK"].(*types.AttributeValueMemberS).Value)
-		assert.Equal(c, "2", metadataProjection["currentSequence"].(*types.AttributeValueMemberN).Value)
+		emoteProjection := projectionQueryOutput.Items[0]
+		assert.Equal(c, "REMOVED", emoteProjection["status"].(*types.AttributeValueMemberS).Value)
+		assert.Equal(c, "2", emoteProjection["__lastEventSequence"].(*types.AttributeValueMemberN).Value)
 	}, 60*time.Second, 2*time.Second)
 
 	emoteProjection := projectionQueryOutput.Items[0]
@@ -295,6 +284,7 @@ func Test_Emote_Remove_Event_Is_Reflected_In_Projection(t *testing.T) {
 
 	require.Equal("REMOVED", emoteProjection["status"].(*types.AttributeValueMemberS).Value)
 	require.Equal("1", emoteProjection["emoteId"].(*types.AttributeValueMemberS).Value)
+	require.Equal("2", emoteProjection["__lastEventSequence"].(*types.AttributeValueMemberN).Value)
 
 	removedAt, err := time.Parse(time.RFC3339Nano, emoteProjection["removedAt"].(*types.AttributeValueMemberS).Value)
 	require.NoError(err)
@@ -310,17 +300,6 @@ func Test_Emote_Remove_Event_Is_Reflected_In_Projection(t *testing.T) {
 	require.True(createdAt.Before(updatedAt))
 
 	assertDDBEmote(t, require, emoteProjection["emote"].(*types.AttributeValueMemberM))
-
-	require.Equal(emoteRemovedEventId, metadataProjection["__updatedBy"].(*types.AttributeValueMemberS).Value)
-
-	createdAt, err = time.Parse(time.RFC3339Nano, metadataProjection["__createdAt"].(*types.AttributeValueMemberS).Value)
-	require.NoError(err)
-	require.True(testStartTime.Before(createdAt))
-
-	updatedAt, err = time.Parse(time.RFC3339Nano, metadataProjection["__updatedAt"].(*types.AttributeValueMemberS).Value)
-	require.NoError(err)
-	require.True(testStartTime.Before(updatedAt))
-	require.True(createdAt.Before(updatedAt))
 }
 
 func Test_Api_Returns_No_Emotes_When_Emote_Has_Been_Removed(t *testing.T) {

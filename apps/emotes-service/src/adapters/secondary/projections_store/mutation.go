@@ -30,129 +30,107 @@ func init() {
 	client = dynamodb.NewFromConfig(cfg)
 }
 
-type MetadataItem struct {
-	/* The Aggregate ID */
-	PK string `dynamodbav:"PK"`
-	/* Value is METADATA */
-	SK              string `dynamodbav:"SK"`
-	CurrentSequence int    `dynamodbav:"currentSequence"`
-	CreatedAt       string `dynamodbav:"__createdAt"`
-	UpdatedAt       string `dynamodbav:"__updatedAt"`
-	UpdatedBy       string `dynamodbav:"__updatedBy"`
-}
-
-func createMetadataItem(emoteEvent event_store.EmoteServiceEvent) types.TransactWriteItem {
-	tableName := environment.GetOrFatal("EVENTS_PROJECTION_TABLE_NAME")
-	now := time.Now().UTC().Format(time.RFC3339Nano)
-
-	metadataItem := types.TransactWriteItem{
-		Update: &types.Update{
-			TableName: aws.String(tableName),
-			Key: map[string]types.AttributeValue{
-				"PK": &types.AttributeValueMemberS{Value: emoteEvent.AggregateId},
-				"SK": &types.AttributeValueMemberS{Value: "METADATA"},
-			},
-			UpdateExpression:    aws.String("SET #currentSequence = :sequence, #createdAt = if_not_exists(#createdAt, :now), #updatedAt = :now, #updatedBy = :updatedBy"),
-			ConditionExpression: aws.String("attribute_not_exists(#currentSequence) OR #currentSequence < :sequence"),
-			ExpressionAttributeNames: map[string]string{
-				"#currentSequence": "currentSequence",
-				"#createdAt":       "__createdAt",
-				"#updatedAt":       "__updatedAt",
-				"#updatedBy":       "__updatedBy",
-			},
-			ExpressionAttributeValues: map[string]types.AttributeValue{
-				":sequence":  &types.AttributeValueMemberN{Value: strconv.Itoa(emoteEvent.Sequence)},
-				":now":       &types.AttributeValueMemberS{Value: now},
-				":updatedBy": &types.AttributeValueMemberS{Value: emoteEvent.Id},
-			},
-		},
-	}
-	return metadataItem
-}
-
 type ProjectionItem struct {
 	/* The Aggregate ID */
 	PK string `dynamodbav:"PK"`
 	/* EMOTE#<EMOTE_ID> */
 	SK string `dynamodbav:"SK"`
 	/* Status can be ACTIVE OR REMOVED */
-	Status    string                              `dynamodbav:"status"`
-	Id        string                              `dynamodbav:"id"`
-	EmoteId   string                              `dynamodbav:"emoteId"`
-	RemovedAt *string                             `dynamodbav:"removedAt"`
-	Emote     *event_store.EmoteServiceEventEmote `dynamodbav:"emote"`
-	CreatedAt string                              `dynamodbav:"__createdAt"`
-	UpdatedAt string                              `dynamodbav:"__updatedAt"`
-	UpdatedBy string                              `dynamodbav:"__updatedBy"`
+	Status            string                              `dynamodbav:"status"`
+	Id                string                              `dynamodbav:"id"`
+	EmoteId           string                              `dynamodbav:"emoteId"`
+	RemovedAt         *string                             `dynamodbav:"removedAt"`
+	Emote             *event_store.EmoteServiceEventEmote `dynamodbav:"emote"`
+	LastEventSequence int                                 `dynamodbav:"__lastEventSequence"`
+	CreatedAt         string                              `dynamodbav:"__createdAt"`
+	UpdatedAt         string                              `dynamodbav:"__updatedAt"`
+	UpdatedBy         string                              `dynamodbav:"__updatedBy"`
 }
 
-func createProjectionItem(ctx context.Context, emoteEvent event_store.EmoteServiceEvent) (types.TransactWriteItem, error) {
+func buildProjectionUpdate(ctx context.Context, emoteEvent event_store.EmoteServiceEvent) (*dynamodb.UpdateItemInput, error) {
 	tableName := environment.GetOrFatal("EVENTS_PROJECTION_TABLE_NAME")
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	seq := strconv.Itoa(emoteEvent.Sequence)
+
+	key := map[string]types.AttributeValue{
+		"PK": &types.AttributeValueMemberS{Value: emoteEvent.AggregateId},
+		"SK": &types.AttributeValueMemberS{Value: fmt.Sprintf("EMOTE#%s", emoteEvent.EmoteId)},
+	}
 
 	switch emoteEvent.EventName {
 	case "EmoteAdded":
-		{
-			now := time.Now().UTC().Format(time.RFC3339Nano)
-			projectionItem := ProjectionItem{
-				PK:        emoteEvent.AggregateId,
-				SK:        fmt.Sprintf("EMOTE#%s", emoteEvent.EmoteId),
-				Status:    "ACTIVE",
-				Id:        generateId(),
-				EmoteId:   emoteEvent.EmoteId,
-				RemovedAt: nil,
-				Emote:     emoteEvent.Emote,
-				CreatedAt: now,
-				UpdatedAt: now,
-				UpdatedBy: emoteEvent.Id,
-			}
-
-			marshalledItem, err := attributevalue.MarshalMap(projectionItem)
-			if err != nil {
-				slog.ErrorContext(ctx, "Error marshalling item", "error", err, "item", projectionItem)
-				log.Fatalf("Error marshalling item")
-			}
-
-			transactItem := types.TransactWriteItem{
-				Put: &types.Put{
-					TableName: aws.String(tableName),
-					Item:      marshalledItem,
-				},
-			}
-
-			return transactItem, nil
+		emoteAttr, err := attributevalue.Marshal(emoteEvent.Emote)
+		if err != nil {
+			slog.ErrorContext(ctx, "marshal emote failed", "error", err, "event", emoteEvent)
+			return nil, err
 		}
+
+		return &dynamodb.UpdateItemInput{
+			TableName: aws.String(tableName),
+			Key:       key,
+			UpdateExpression: aws.String("SET " +
+				"#status = :active, " +
+				"#id = if_not_exists(#id, :id), " +
+				"#emoteId = :emoteId, " +
+				"#emote = :emote, " +
+				"#removedAt = :null, " +
+				"#createdAt = if_not_exists(#createdAt, :now), " +
+				"#updatedAt = :now, " +
+				"#updatedBy = :eventId, " +
+				"#lastSeq = :seq"),
+			ConditionExpression: aws.String("attribute_not_exists(#lastSeq) OR #lastSeq < :seq"),
+			ExpressionAttributeNames: map[string]string{
+				"#status":    "status",
+				"#id":        "id",
+				"#emoteId":   "emoteId",
+				"#emote":     "emote",
+				"#removedAt": "removedAt",
+				"#createdAt": "__createdAt",
+				"#updatedAt": "__updatedAt",
+				"#updatedBy": "__updatedBy",
+				"#lastSeq":   "__lastEventSequence",
+			},
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":active":  &types.AttributeValueMemberS{Value: "ACTIVE"},
+				":id":      &types.AttributeValueMemberS{Value: generateId()},
+				":emoteId": &types.AttributeValueMemberS{Value: emoteEvent.EmoteId},
+				":emote":   emoteAttr,
+				":null":    &types.AttributeValueMemberNULL{Value: true},
+				":now":     &types.AttributeValueMemberS{Value: now},
+				":eventId": &types.AttributeValueMemberS{Value: emoteEvent.Id},
+				":seq":     &types.AttributeValueMemberN{Value: seq},
+			},
+		}, nil
+
 	case "EmoteRemoved":
-		{
-			now := time.Now().UTC().Format(time.RFC3339Nano)
-			transactItem := types.TransactWriteItem{
-				Update: &types.Update{
-					TableName: aws.String(tableName),
-					Key: map[string]types.AttributeValue{
-						"PK": &types.AttributeValueMemberS{Value: emoteEvent.AggregateId},
-						"SK": &types.AttributeValueMemberS{Value: fmt.Sprintf("EMOTE#%s", emoteEvent.EmoteId)},
-					},
-					UpdateExpression: aws.String("SET #status = :status, #removedAt = :removedAt, #updatedAt = :updatedAt, #updatedBy = :updatedBy"),
-					ExpressionAttributeNames: map[string]string{
-						"#status":    "status",
-						"#removedAt": "removedAt",
-						"#updatedAt": "__updatedAt",
-						"#updatedBy": "__updatedBy",
-					},
-					ExpressionAttributeValues: map[string]types.AttributeValue{
-						":status":    &types.AttributeValueMemberS{Value: "REMOVED"},
-						":removedAt": &types.AttributeValueMemberS{Value: now},
-						":updatedAt": &types.AttributeValueMemberS{Value: now},
-						":updatedBy": &types.AttributeValueMemberS{Value: emoteEvent.Id},
-					},
-				},
-			}
-
-			return transactItem, nil
-		}
+		return &dynamodb.UpdateItemInput{
+			TableName: aws.String(tableName),
+			Key:       key,
+			UpdateExpression: aws.String("SET " +
+				"#status = :removed, " +
+				"#removedAt = :now, " +
+				"#updatedAt = :now, " +
+				"#updatedBy = :eventId, " +
+				"#lastSeq = :seq"),
+			ConditionExpression: aws.String("attribute_not_exists(#lastSeq) OR #lastSeq < :seq"),
+			ExpressionAttributeNames: map[string]string{
+				"#status":    "status",
+				"#removedAt": "removedAt",
+				"#updatedAt": "__updatedAt",
+				"#updatedBy": "__updatedBy",
+				"#lastSeq":   "__lastEventSequence",
+			},
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":removed": &types.AttributeValueMemberS{Value: "REMOVED"},
+				":now":     &types.AttributeValueMemberS{Value: now},
+				":eventId": &types.AttributeValueMemberS{Value: emoteEvent.Id},
+				":seq":     &types.AttributeValueMemberN{Value: seq},
+			},
+		}, nil
 	}
 
 	slog.ErrorContext(ctx, "Unhandled event", "eventName", emoteEvent.EventName, "event", emoteEvent)
-	return types.TransactWriteItem{}, fmt.Errorf("unhandled event: %s", emoteEvent.EventName)
+	return nil, fmt.Errorf("unhandled event: %s", emoteEvent.EventName)
 }
 
 func generateId() string {
@@ -165,31 +143,30 @@ func generateId() string {
 }
 
 func Persist(ctx context.Context, emoteEvent event_store.EmoteServiceEvent) error {
-	projectionItem, err := createProjectionItem(ctx, emoteEvent)
+	update, err := buildProjectionUpdate(ctx, emoteEvent)
 	if err != nil {
 		return err
 	}
 
-	metadataItem := createMetadataItem(emoteEvent)
-
-	_, err = client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
-		TransactItems: []types.TransactWriteItem{projectionItem, metadataItem},
-	})
+	_, err = client.UpdateItem(ctx, update)
 	if err != nil {
-		if canceled, ok := errors.AsType[*types.TransactionCanceledException](err); ok {
-			for _, reason := range canceled.CancellationReasons {
-				if reason.Code != nil && *reason.Code == "ConditionalCheckFailed" {
-					slog.WarnContext(ctx, "Skipping event",
-						"eventId", emoteEvent.Id,
-						"sequence", emoteEvent.Sequence,
-						"aggregateId", emoteEvent.AggregateId,
-						"eventName", emoteEvent.EventName,
-						"error", err,
-					)
-					return nil
-				}
-			}
+		if _, ok := errors.AsType[*types.ConditionalCheckFailedException](err); ok {
+			slog.InfoContext(ctx, "idempotent skip",
+				"eventId", emoteEvent.Id,
+				"sequence", emoteEvent.Sequence,
+				"aggregateId", emoteEvent.AggregateId,
+				"emoteId", emoteEvent.EmoteId,
+				"eventName", emoteEvent.EventName,
+			)
+			return nil
 		}
+		slog.ErrorContext(ctx, "projection update failed",
+			"eventId", emoteEvent.Id,
+			"sequence", emoteEvent.Sequence,
+			"aggregateId", emoteEvent.AggregateId,
+			"eventName", emoteEvent.EventName,
+			"error", err,
+		)
 		return err
 	}
 
