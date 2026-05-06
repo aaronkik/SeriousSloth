@@ -184,6 +184,7 @@ func Persist(ctx context.Context, emoteEvent event_store.EmoteServiceEvent) erro
 						"sequence", emoteEvent.Sequence,
 						"aggregateId", emoteEvent.AggregateId,
 						"eventName", emoteEvent.EventName,
+						"error", err,
 					)
 					return nil
 				}
