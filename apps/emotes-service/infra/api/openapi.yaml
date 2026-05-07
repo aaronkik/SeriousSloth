@@ -9,7 +9,7 @@ paths:
   /emotes/{channelId}:
     get:
       operationId: Emotes_list
-      description: List active emotes for an channelId
+      description: List active emotes for a channel
       parameters:
         - name: channelId
           in: path
@@ -38,6 +38,39 @@ paths:
         httpMethod: POST
         payloadFormatVersion: '1.0'
         uri: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:__GET_EMOTES_FUNCTION_NAME__/invocations
+        passthroughBehavior: when_no_match
+  /emotes/{channelId}/removed:
+    get:
+      operationId: Emotes_listRemoved
+      description: List removed emotes for a channel
+      parameters:
+        - name: channelId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RemovedEmote'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Emotes
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: '1.0'
+        uri: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:__GET_REMOVED_EMOTES_FUNCTION_NAME__/invocations
         passthroughBehavior: when_no_match
 security:
   - ApiKeyAuth: []
@@ -113,6 +146,17 @@ components:
       properties:
         message:
           type: string
+    RemovedEmote:
+      type: object
+      required:
+        - emote
+        - removedAt
+      properties:
+        emote:
+          $ref: '#/components/schemas/Emote'
+        removedAt:
+          type: string
+          format: date-time
   securitySchemes:
     ApiKeyAuth:
       type: apiKey

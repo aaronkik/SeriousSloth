@@ -328,12 +328,37 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 		return nil, err
 	}
 
+	getRemovedEmotesLambda, err := components.NewLambda(ctx, "get-removed-emotes", &components.LambdaArgs{
+		Code: pulumi.NewAssetArchive(map[string]any{
+			"bootstrap": pulumi.NewFileAsset("../dist/get-removed-emotes/bootstrap"),
+		}),
+		Environment: pulumi.StringMap{
+			"EVENTS_PROJECTION_TABLE_NAME": pulumi.StringInput(statefulResource.TwitchEmotesProjectionsTable.Name),
+		},
+		PolicyStatements: iam.GetPolicyDocumentStatementArray{
+			&iam.GetPolicyDocumentStatementArgs{
+				Effect:    pulumi.String("Allow"),
+				Actions:   pulumi.StringArray{pulumi.String("dynamodb:Query")},
+				Resources: pulumi.StringArray{statefulResource.TwitchEmotesProjectionsTable.Arn},
+			},
+		},
+	}, pulumi.Parent(component), providerResource)
+	if err != nil {
+		return nil, err
+	}
+
 	bindings := []routeBinding{
 		{
 			placeholder:       "__GET_EMOTES_FUNCTION_NAME__",
 			permissionName:    "emotes-api-invoke-get-emotes",
 			function:          getEmotesLambda.Function,
 			sourcePathPattern: "*/GET/emotes/*",
+		},
+		{
+			placeholder:       "__GET_REMOVED_EMOTES_FUNCTION_NAME__",
+			permissionName:    "emotes-api-invoke-get-removed-emotes",
+			function:          getRemovedEmotesLambda.Function,
+			sourcePathPattern: "*/GET/emotes/*/removed",
 		},
 	}
 

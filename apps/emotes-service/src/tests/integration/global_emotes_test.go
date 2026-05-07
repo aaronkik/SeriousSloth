@@ -38,20 +38,27 @@ var httpClient = &http.Client{Timeout: 10 * time.Second}
 var testStartTime = time.Now()
 var emoteAddedEventId string
 
+type apiEmote struct {
+	Id        string   `json:"id"`
+	Name      string   `json:"name"`
+	Format    []string `json:"format"`
+	Scale     []string `json:"scale"`
+	ThemeMode []string `json:"theme_mode"`
+	Images    struct {
+		URL1X string `json:"url_1x"`
+		URL2X string `json:"url_2x"`
+		URL4X string `json:"url_4x"`
+	} `json:"images"`
+}
+
 type apiActiveEmote struct {
-	Emote struct {
-		Id        string   `json:"id"`
-		Name      string   `json:"name"`
-		Format    []string `json:"format"`
-		Scale     []string `json:"scale"`
-		ThemeMode []string `json:"theme_mode"`
-		Images    struct {
-			URL1X string `json:"url_1x"`
-			URL2X string `json:"url_2x"`
-			URL4X string `json:"url_4x"`
-		} `json:"images"`
-	} `json:"emote"`
-	AddedAt string `json:"addedAt"`
+	Emote   apiEmote `json:"emote"`
+	AddedAt string   `json:"addedAt"`
+}
+
+type apiRemovedEmote struct {
+	Emote     apiEmote `json:"emote"`
+	RemovedAt string   `json:"removedAt"`
 }
 
 func Test_Emote_Added_Event_Is_Added_To_Event_Store_When_Emote_Exists(t *testing.T) {
@@ -322,6 +329,42 @@ func Test_Api_Returns_No_Emotes_When_Emote_Has_Been_Removed(t *testing.T) {
 	}, 30*time.Second, 2*time.Second)
 }
 
+func Test_Api_Returns_Removed_Emote_For_Channel(t *testing.T) {
+	require := require.New(t)
+
+	var parsed []apiRemovedEmote
+	require.EventuallyWithT(func(c *assert.CollectT) {
+		body, status, err := getRemovedEmotes(ctx, apiInvokeUrl, apiKey, "GLOBAL")
+		if !assert.NoError(c, err) {
+			return
+		}
+		if !assert.Equal(c, http.StatusOK, status) {
+			return
+		}
+
+		parsed = nil
+		if !assert.NoError(c, json.Unmarshal(body, &parsed)) {
+			return
+		}
+		assert.Len(c, parsed, 1)
+	}, 30*time.Second, 2*time.Second)
+
+	require.Len(parsed, 1)
+	emote := parsed[0]
+	require.Equal("1", emote.Emote.Id)
+	require.Equal(":)", emote.Emote.Name)
+	require.Equal([]string{"static"}, emote.Emote.Format)
+	require.Equal([]string{"1.0", "2.0", "3.0"}, emote.Emote.Scale)
+	require.Equal([]string{"light", "dark"}, emote.Emote.ThemeMode)
+	require.Equal("https://static-cdn.jtvnw.net/emoticons/v2/1/static/light/1.0", emote.Emote.Images.URL1X)
+	require.Equal("https://static-cdn.jtvnw.net/emoticons/v2/1/static/light/2.0", emote.Emote.Images.URL2X)
+	require.Equal("https://static-cdn.jtvnw.net/emoticons/v2/1/static/light/3.0", emote.Emote.Images.URL4X)
+
+	removedAt, err := time.Parse(time.RFC3339Nano, emote.RemovedAt)
+	require.NoError(err)
+	require.True(testStartTime.Before(removedAt))
+}
+
 func loadAwsConfig(t *testing.T) aws.Config {
 	t.Helper()
 	cfg, err := config.LoadDefaultConfig(ctx)
@@ -332,7 +375,15 @@ func loadAwsConfig(t *testing.T) aws.Config {
 }
 
 func getEmotes(ctx context.Context, baseUrl, apiKey, channelId string) ([]byte, int, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseUrl+"/emotes/"+channelId, nil)
+	return doGet(ctx, baseUrl+"/emotes/"+channelId, apiKey)
+}
+
+func getRemovedEmotes(ctx context.Context, baseUrl, apiKey, channelId string) ([]byte, int, error) {
+	return doGet(ctx, baseUrl+"/emotes/"+channelId+"/removed", apiKey)
+}
+
+func doGet(ctx context.Context, url, apiKey string) ([]byte, int, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, 0, err
 	}
