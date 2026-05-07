@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"emotes-service/src/adapters/primary/apigw"
-	"emotes-service/src/adapters/secondary/projections_store"
+	"emotes-service/src/apigw"
+	getemotes "emotes-service/src/use-cases/get-emotes"
 	"log/slog"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -18,28 +18,26 @@ type activeEmoteDTO struct {
 
 func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	channelId := request.PathParameters["channelId"]
+
 	if channelId == "" {
 		return apigw.JSONResponse(ctx, 400, map[string]string{"message": "channelId is required"})
 	}
 
-	items, err := projections_store.QueryActiveEmotes(ctx, channelId)
+	activeEmotes, err := getemotes.ActiveEmotes(ctx, channelId)
+
 	if err != nil {
-		slog.ErrorContext(ctx, "QueryActiveEmotes failed", "channelId", channelId, "error", err)
+		slog.ErrorContext(ctx, "get-emotes use-case failed", "channelId", channelId, "error", err)
 		return apigw.JSONResponse(ctx, 500, map[string]string{"message": "internal error"})
 	}
 
-	activeEmotes := make([]activeEmoteDTO, 0, len(items))
-	for _, item := range items {
-		if item.Emote == nil {
-			continue
-		}
-		activeEmotes = append(activeEmotes, activeEmoteDTO{
+	dtos := make([]activeEmoteDTO, 0, len(activeEmotes))
+	for _, item := range activeEmotes {
+		dtos = append(dtos, activeEmoteDTO{
 			Emote:   apigw.EmoteFromEvent(item.Emote),
-			AddedAt: item.CreatedAt,
+			AddedAt: item.AddedAt,
 		})
 	}
-
-	return apigw.JSONResponse(ctx, 200, activeEmotes)
+	return apigw.JSONResponse(ctx, 200, dtos)
 }
 
 func main() {

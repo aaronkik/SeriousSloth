@@ -17,7 +17,7 @@ type Emote struct {
 	Images    EmoteImages `json:"images"`
 }
 
-func EmoteFromEvent(e *event_store.EmoteServiceEventEmote) Emote {
+func EmoteFromEvent(e event_store.EmoteServiceEventEmote) Emote {
 	return Emote{
 		ID:        e.ID,
 		Name:      e.Name,
