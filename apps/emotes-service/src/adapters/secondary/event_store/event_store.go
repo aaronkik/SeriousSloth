@@ -2,15 +2,9 @@ package event_store
 
 import (
 	"context"
-	"crypto/rand"
-	"emotes-service/src/adapters/secondary/twitch"
 	"emotes-service/src/environment"
-	"encoding/hex"
-	"fmt"
 	"log"
 	"log/slog"
-	"sort"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -59,37 +53,7 @@ type EmoteServiceEvent struct {
 	Sequence    int                     `dynamodbav:"sequence"`
 }
 
-type EmotesAggregate struct {
-	/* A set of current emote IDs */
-	State          map[string]struct{}
-	LatestSequence int
-}
-
-func LoadAggregate(ctx context.Context, aggregateId string) (*EmotesAggregate, error) {
-	events, err := loadEvents(ctx, aggregateId)
-
-	if err != nil {
-		return nil, err
-	}
-
-	aggregate := &EmotesAggregate{
-		State: make(map[string]struct{}),
-	}
-
-	for _, event := range events {
-		switch event.EventName {
-		case "EmoteAdded":
-			aggregate.State[event.EmoteId] = struct{}{}
-		case "EmoteRemoved":
-			delete(aggregate.State, event.EmoteId)
-		}
-		aggregate.LatestSequence = event.Sequence
-	}
-
-	return aggregate, nil
-}
-
-func loadEvents(ctx context.Context, aggregateId string) ([]EmoteServiceEvent, error) {
+func LoadEvents(ctx context.Context, aggregateId string) ([]EmoteServiceEvent, error) {
 	paginator := dynamodb.NewQueryPaginator(client, &dynamodb.QueryInput{
 		TableName:              aws.String(environment.GetOrFatal("TWITCH_EMOTES_EVENT_STORE_TABLE")),
 		KeyConditionExpression: aws.String("PK = :pk AND begins_with(SK, :sk)"),
@@ -166,109 +130,4 @@ func AppendEvents(ctx context.Context, events []EmoteServiceEvent) error {
 		}
 	}
 	return nil
-}
-
-func DecideSyncEvents(aggregateId string, emotesAggregate *EmotesAggregate, globalEmotes []twitch.GlobalEmote) []EmoteServiceEvent {
-	twitchState := make(map[string]twitch.GlobalEmote, len(globalEmotes))
-	for _, emote := range globalEmotes {
-		twitchState[emote.ID] = emote
-	}
-
-	var removedIds []string
-	for id := range emotesAggregate.State {
-		if _, exists := twitchState[id]; !exists {
-			removedIds = append(removedIds, id)
-		}
-	}
-	sort.Strings(removedIds)
-
-	var addedIds []string
-	for id := range twitchState {
-		if _, exists := emotesAggregate.State[id]; !exists {
-			addedIds = append(addedIds, id)
-		}
-	}
-	sort.Strings(addedIds)
-
-	currentSequence := emotesAggregate.LatestSequence
-	events := make([]EmoteServiceEvent, 0, len(removedIds)+len(addedIds))
-
-	for _, id := range removedIds {
-		currentSequence++
-		events = append(events, createEmoteEvent(createEmoteEventInput{
-			AggregateId: aggregateId,
-			Sequence:    currentSequence,
-			CreatedAt:   time.Now().UTC().Format(time.RFC3339Nano),
-			EventName:   "EmoteRemoved",
-			EmoteId:     id,
-			Emote:       nil,
-		}))
-	}
-
-	for _, id := range addedIds {
-		currentSequence++
-		src := twitchState[id]
-		emote := &EmoteServiceEventEmote{
-			Format:    src.Format,
-			ID:        src.ID,
-			Name:      src.Name,
-			Scale:     src.Scale,
-			ThemeMode: src.ThemeMode,
-			Images: EmoteServiceEventEmoteImages{
-				URL1X: src.Images.URL1X,
-				URL2X: src.Images.URL2X,
-				URL4X: src.Images.URL4X,
-			},
-		}
-
-		events = append(events, createEmoteEvent(createEmoteEventInput{
-			AggregateId: aggregateId,
-			Sequence:    currentSequence,
-			CreatedAt:   time.Now().UTC().Format(time.RFC3339Nano),
-			EventName:   "EmoteAdded",
-			EmoteId:     id,
-			Emote:       emote,
-		}))
-	}
-
-	return events
-}
-
-func generateEventSequence(n int) string {
-	return fmt.Sprintf("%07d", n)
-}
-
-func generateId() string {
-	bytes := make([]byte, 12)
-	_, err := rand.Read(bytes)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return fmt.Sprintf("es_%s", hex.EncodeToString(bytes))
-}
-
-type createEmoteEventInput struct {
-	AggregateId string
-	Sequence    int
-	CreatedAt   string
-	EventName   string
-	EmoteId     string
-	Emote       *EmoteServiceEventEmote
-}
-
-func createEmoteEvent(eventInput createEmoteEventInput) EmoteServiceEvent {
-	pk := eventInput.AggregateId
-	sk := fmt.Sprintf("SEQUENCE#%s", generateEventSequence(eventInput.Sequence))
-	return EmoteServiceEvent{
-		PK:          pk,
-		SK:          sk,
-		AggregateId: eventInput.AggregateId,
-		CreatedAt:   eventInput.CreatedAt,
-		Emote:       eventInput.Emote,
-		EmoteId:     eventInput.EmoteId,
-		EventName:   eventInput.EventName,
-		Id:          generateId(),
-		Kind:        "EVENT",
-		Sequence:    eventInput.Sequence,
-	}
 }

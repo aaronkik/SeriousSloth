@@ -36,15 +36,15 @@ type ProjectionItem struct {
 	/* EMOTE#<EMOTE_ID> */
 	SK string `dynamodbav:"SK"`
 	/* Status can be ACTIVE OR REMOVED */
-	Status            string                              `dynamodbav:"status"`
-	Id                string                              `dynamodbav:"id"`
-	EmoteId           string                              `dynamodbav:"emoteId"`
-	RemovedAt         *string                             `dynamodbav:"removedAt"`
-	Emote             *event_store.EmoteServiceEventEmote `dynamodbav:"emote"`
-	LastEventSequence int                                 `dynamodbav:"__lastEventSequence"`
-	CreatedAt         string                              `dynamodbav:"__createdAt"`
-	UpdatedAt         string                              `dynamodbav:"__updatedAt"`
-	UpdatedBy         string                              `dynamodbav:"__updatedBy"`
+	Status            string                             `dynamodbav:"status"`
+	Id                string                             `dynamodbav:"id"`
+	EmoteId           string                             `dynamodbav:"emoteId"`
+	RemovedAt         *string                            `dynamodbav:"removedAt"`
+	Emote             event_store.EmoteServiceEventEmote `dynamodbav:"emote"`
+	LastEventSequence int                                `dynamodbav:"__lastEventSequence"`
+	CreatedAt         string                             `dynamodbav:"__createdAt"`
+	UpdatedAt         string                             `dynamodbav:"__updatedAt"`
+	UpdatedBy         string                             `dynamodbav:"__updatedBy"`
 }
 
 func buildProjectionUpdate(ctx context.Context, emoteEvent event_store.EmoteServiceEvent) (*dynamodb.UpdateItemInput, error) {
