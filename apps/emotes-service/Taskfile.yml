@@ -20,6 +20,7 @@ tasks:
         fi
       - pulumi config env add emotes-service/dev --yes
       - pulumi config env add emotes-service/twitch-credentials --yes
+      - pulumi config env add new-relic/dev --yes
 
   create:staging:
     desc: Creates the staging stack in pulumi with ESC values
@@ -32,6 +33,7 @@ tasks:
         fi
       - pulumi config env add emotes-service/staging --yes
       - pulumi config env add emotes-service/twitch-credentials --yes
+      - pulumi config env add new-relic/staging --yes
 
   create:prod:
     desc: Creates the prod stack in pulumi with ESC values
@@ -44,6 +46,7 @@ tasks:
         fi
       - pulumi config env add emotes-service/prod --yes
       - pulumi config env add emotes-service/twitch-credentials --yes
+      - pulumi config env add new-relic/prod --yes
 
   preview:
     desc: Preview any stack changes
