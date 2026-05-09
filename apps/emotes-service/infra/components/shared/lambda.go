@@ -135,11 +135,17 @@ func NewLambda(ctx *pulumi.Context, name string, args *LambdaArgs, opts ...pulum
 		logLevel = "DEBUG"
 	}
 
+	newRelicEnabled := "true"
+	if stack.IsEphemeral(ctx.Stack()) {
+		newRelicEnabled = "false"
+	}
+
 	envVars := pulumi.StringMap{
 		"AWS_LAMBDA_LOG_FORMAT":                    pulumi.String("JSON"),
 		"AWS_LAMBDA_LOG_LEVEL":                     pulumi.String(logLevel),
 		"NEW_RELIC_ACCOUNT_ID":                     pulumi.StringInput(newRelicAccountId),
-		"NEW_RELIC_APM_LAMBDA_MODE":                pulumi.String("true"),
+		"NEW_RELIC_APM_LAMBDA_MODE":                pulumi.String(newRelicEnabled),
+		"NEW_RELIC_DISTRIBUTED_TRACING_ENABLED":    pulumi.String(newRelicEnabled),
 		"NEW_RELIC_APP_NAME":                       pulumi.String(ctx.Project()),
 		"NEW_RELIC_CLOUD_AWS_ACCOUNT_ID":           pulumi.String(awsAccountId),
 		"NEW_RELIC_LICENSE_KEY_SSM_PARAMETER_NAME": pulumi.StringInput(newRelicLambdaLicenseKeySSMParameterArn),
