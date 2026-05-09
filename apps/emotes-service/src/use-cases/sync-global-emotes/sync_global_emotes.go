@@ -10,6 +10,8 @@ import (
 	"log"
 	"sort"
 	"time"
+
+	"github.com/newrelic/go-agent/v3/newrelic"
 )
 
 type EmotesAggregate struct {
@@ -136,22 +138,38 @@ func generateId() string {
 }
 
 func Execute(ctx context.Context) error {
+	txn := newrelic.FromContext(ctx)
+
+	seg := txn.StartSegment("twitch.GetAccessToken")
 	token, err := twitch.GetAccessToken(ctx)
+	seg.End()
 	if err != nil {
 		return err
 	}
 
+	seg = txn.StartSegment("twitch.GetGlobalEmotes")
 	emotes, err := twitch.GetGlobalEmotes(ctx, token)
+	seg.End()
 	if err != nil {
 		return err
 	}
 
+	seg = txn.StartSegment("event_store.LoadEvents")
 	events, err := event_store.LoadEvents(ctx, event_store.GlobalEmotesAggregateId)
+	seg.End()
 	if err != nil {
 		return err
 	}
 
+	seg = txn.StartSegment("Aggregate")
 	aggregate := Aggregate(events)
+	seg.End()
+
+	seg = txn.StartSegment("DecideSyncEvents")
 	newEvents := DecideSyncEvents(event_store.GlobalEmotesAggregateId, aggregate, emotes)
+	seg.End()
+
+	seg = txn.StartSegment("event_store.AppendEvents")
+	defer seg.End()
 	return event_store.AppendEvents(ctx, newEvents)
 }
