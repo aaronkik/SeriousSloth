@@ -1,5 +1,5 @@
 import 'whatwg-fetch';
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import { server } from '~/__mocks__/msw-server';
 
 beforeAll(() => server.listen());
