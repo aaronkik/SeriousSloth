@@ -5,7 +5,7 @@ import HeaderLink from './header-link';
 const Header = () => (
   <header>
     <Container className='flex flex-row items-center gap-4 py-4'>
-      <Link href='/' passHref>
+      <Link href='/'>
         <SlothLogo className='rounded-full' width={40} height={40} />
       </Link>
       <nav>

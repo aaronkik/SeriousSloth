@@ -5,7 +5,7 @@ export const usernameRequired = 'Username is required';
 export const usernameLengthMessage = `Username must be between ${usernameMinLength} and ${usernameMaxLength}`;
 export const usernamePatternMessage = `Username can only contain alphanumeric characters`;
 
-export const usernameFormRules: RegisterOptions = {
+export const usernameFormRules: RegisterOptions<{ username: string }, 'username'> = {
   required: usernameRequired,
   minLength: {
     value: usernameMinLength,
