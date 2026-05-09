@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"emotes-service/src/environment"
 	syncglobalemotes "emotes-service/src/use-cases/sync-global-emotes"
 	"log/slog"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-lambda-go/lambdacontext"
+	"github.com/newrelic/go-agent/v3/integrations/nrlambda"
+	"github.com/newrelic/go-agent/v3/newrelic"
 )
 
 func handler(ctx context.Context, event events.CloudWatchEvent) error {
@@ -16,6 +18,18 @@ func handler(ctx context.Context, event events.CloudWatchEvent) error {
 }
 
 func main() {
-	slog.SetDefault(lambdacontext.NewLogger())
-	lambda.Start(handler)
+	logger := lambdacontext.NewLogger().With(
+		slog.Group("tags",
+			"project", environment.GetOrFatal("PROJECT"),
+			"stack", environment.GetOrFatal("STACK"),
+		),
+	)
+	slog.SetDefault(logger)
+
+	app, err := newrelic.NewApplication(nrlambda.ConfigOption())
+	if err != nil {
+		slog.Error("error creating app (invalid config)", "err", err)
+	}
+
+	nrlambda.Start(handler, app)
 }

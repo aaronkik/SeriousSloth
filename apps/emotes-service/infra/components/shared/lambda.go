@@ -4,10 +4,12 @@ import (
 	"emotes-service/infra/stack"
 	"fmt"
 
+	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws"
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/cloudwatch"
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/iam"
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws/lambda"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 )
 
 type LambdaArgs struct {
@@ -33,8 +35,18 @@ func NewLambda(ctx *pulumi.Context, name string, args *LambdaArgs, opts ...pulum
 		return nil, fmt.Errorf("args.Code is required")
 	}
 
+	caller, err := aws.GetCallerIdentity(ctx, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	awsAccountId := caller.AccountId
+
+	newRelicConfig := config.New(ctx, "newrelic")
+	newRelicAccountId := newRelicConfig.RequireSecret("accountId")
+	newRelicLambdaLicenseKeySSMParameterArn := newRelicConfig.RequireSecret("lambdaLicenseKeySSMParameterArn")
+
 	component := &Lambda{}
-	err := ctx.RegisterComponentResourceV2("components-shared:index:Lambda", name, nil, component, opts...)
+	err = ctx.RegisterComponentResourceV2("components-shared:index:Lambda", name, nil, component, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -81,6 +93,15 @@ func NewLambda(ctx *pulumi.Context, name string, args *LambdaArgs, opts ...pulum
 				pulumi.Sprintf("%s:*", lambdaLogGroup.Arn),
 			},
 		},
+		&iam.GetPolicyDocumentStatementArgs{
+			Effect: pulumi.String("Allow"),
+			Actions: pulumi.StringArray{
+				pulumi.String("ssm:GetParameter"),
+			},
+			Resources: pulumi.StringArray{
+				newRelicLambdaLicenseKeySSMParameterArn,
+			},
+		},
 	}
 	policyStatements = append(policyStatements, args.PolicyStatements...)
 
@@ -114,9 +135,25 @@ func NewLambda(ctx *pulumi.Context, name string, args *LambdaArgs, opts ...pulum
 		logLevel = "DEBUG"
 	}
 
+	newRelicEnabled := "true"
+	if stack.IsEphemeral(ctx.Stack()) {
+		newRelicEnabled = "false"
+	}
+
 	envVars := pulumi.StringMap{
-		"AWS_LAMBDA_LOG_FORMAT": pulumi.String("JSON"),
-		"AWS_LAMBDA_LOG_LEVEL":  pulumi.String(logLevel),
+		"AWS_LAMBDA_LOG_FORMAT":                    pulumi.String("JSON"),
+		"AWS_LAMBDA_LOG_LEVEL":                     pulumi.String(logLevel),
+		"NEW_RELIC_ACCOUNT_ID":                     pulumi.StringInput(newRelicAccountId),
+		"NEW_RELIC_APM_LAMBDA_MODE":                pulumi.String(newRelicEnabled),
+		"NEW_RELIC_DISTRIBUTED_TRACING_ENABLED":    pulumi.String(newRelicEnabled),
+		"NEW_RELIC_APP_NAME":                       pulumi.String(ctx.Project()),
+		"NEW_RELIC_CLOUD_AWS_ACCOUNT_ID":           pulumi.String(awsAccountId),
+		"NEW_RELIC_LICENSE_KEY_SSM_PARAMETER_NAME": pulumi.StringInput(newRelicLambdaLicenseKeySSMParameterArn),
+		"NEW_RELIC_LOG_LEVEL":                      pulumi.String(logLevel),
+		"NEW_RELIC_EXTENSION_SEND_LOGS":            pulumi.String("function"),
+		"NEW_RELIC_TRUSTED_ACCOUNT_KEY":            pulumi.StringInput(newRelicAccountId),
+		"STACK":                                    pulumi.String(ctx.Stack()),
+		"PROJECT":                                  pulumi.String(ctx.Project()),
 	}
 	for k, v := range args.Environment {
 		envVars[k] = v
@@ -136,6 +173,9 @@ func NewLambda(ctx *pulumi.Context, name string, args *LambdaArgs, opts ...pulum
 		},
 		Architectures: pulumi.StringArray{
 			pulumi.String("arm64"),
+		},
+		Layers: pulumi.StringArray{
+			pulumi.String("arn:aws:lambda:eu-west-1:451483290750:layer:NewRelicLambdaExtensionARM64:54"),
 		},
 		LoggingConfig: &lambda.FunctionLoggingConfigArgs{
 			ApplicationLogLevel: pulumi.String(logLevel),

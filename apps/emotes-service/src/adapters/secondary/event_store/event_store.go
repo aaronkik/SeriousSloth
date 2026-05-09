@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/newrelic/go-agent/v3/newrelic"
 )
 
 var client *dynamodb.Client
@@ -54,8 +55,11 @@ type EmoteServiceEvent struct {
 }
 
 func LoadEvents(ctx context.Context, aggregateId string) ([]EmoteServiceEvent, error) {
+	txn := newrelic.FromContext(ctx)
+	tableName := environment.GetOrFatal("TWITCH_EMOTES_EVENT_STORE_TABLE")
+
 	paginator := dynamodb.NewQueryPaginator(client, &dynamodb.QueryInput{
-		TableName:              aws.String(environment.GetOrFatal("TWITCH_EMOTES_EVENT_STORE_TABLE")),
+		TableName:              aws.String(tableName),
 		KeyConditionExpression: aws.String("PK = :pk AND begins_with(SK, :sk)"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
 			":pk": &types.AttributeValueMemberS{Value: aggregateId},
@@ -66,7 +70,19 @@ func LoadEvents(ctx context.Context, aggregateId string) ([]EmoteServiceEvent, e
 
 	var items []EmoteServiceEvent
 	for paginator.HasMorePages() {
+		ddbSeg := newrelic.DatastoreSegment{
+			StartTime:          txn.StartSegmentNow(),
+			Product:            newrelic.DatastoreDynamoDB,
+			Collection:         tableName,
+			Operation:          "Query",
+			ParameterizedQuery: "PK = :pk AND begins_with(SK, :sk)",
+			QueryParameters: map[string]any{
+				":pk": aggregateId,
+				":sk": "SEQUENCE#",
+			},
+		}
 		page, err := paginator.NextPage(ctx)
+		ddbSeg.End()
 		if err != nil {
 			slog.Error("Error querying", "aggregateId", aggregateId, "error", err)
 			return nil, err
@@ -92,6 +108,7 @@ func AppendEvents(ctx context.Context, events []EmoteServiceEvent) error {
 
 	slog.InfoContext(ctx, "Events to append", "length", eventsLength)
 
+	txn := newrelic.FromContext(ctx)
 	table := environment.GetOrFatal("TWITCH_EMOTES_EVENT_STORE_TABLE")
 
 	const transactWriteMaxItems = 100
@@ -115,9 +132,16 @@ func AppendEvents(ctx context.Context, events []EmoteServiceEvent) error {
 			})
 		}
 
+		ddbSeg := newrelic.DatastoreSegment{
+			StartTime:  txn.StartSegmentNow(),
+			Product:    newrelic.DatastoreDynamoDB,
+			Collection: table,
+			Operation:  "TransactWriteItems",
+		}
 		_, err := client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
 			TransactItems: items,
 		})
+		ddbSeg.End()
 
 		if err != nil {
 			slog.ErrorContext(ctx, "AppendEvents failed",

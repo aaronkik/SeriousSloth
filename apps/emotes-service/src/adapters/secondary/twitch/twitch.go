@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/newrelic/go-agent/v3/newrelic"
+	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 )
 
@@ -32,7 +34,11 @@ func GetAccessToken(ctx context.Context) (string, error) {
 		TokenURL:     environment.GetOrFatal("TWITCH_OAUTH_ENDPOINT"),
 	}
 
-	token, err := oauth2Config.Token(context.Background())
+	tokenCtx := context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
+		Timeout:   time.Second * 10,
+		Transport: newrelic.NewRoundTripper(nil),
+	})
+	token, err := oauth2Config.Token(tokenCtx)
 	if err != nil {
 		slog.Error("Error getting access token", "error", err)
 		return "", err
@@ -61,10 +67,11 @@ type GlobalEmotesResponse struct {
 
 func GetGlobalEmotes(ctx context.Context, accessToken string) ([]GlobalEmote, error) {
 	client := &http.Client{
-		Timeout: time.Second * 10,
+		Timeout:   time.Second * 10,
+		Transport: newrelic.NewRoundTripper(nil),
 	}
 
-	req, err := http.NewRequest("GET", environment.GetOrFatal("TWITCH_GLOBAL_EMOTES_ENDPOINT"), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", environment.GetOrFatal("TWITCH_GLOBAL_EMOTES_ENDPOINT"), nil)
 	if err != nil {
 		slog.Error("Error creating global emotes request", "error", err)
 		return nil, err
