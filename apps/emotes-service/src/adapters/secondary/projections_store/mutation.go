@@ -18,6 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/newrelic/go-agent/v3/newrelic"
 )
 
 var client *dynamodb.Client
@@ -148,7 +149,15 @@ func Persist(ctx context.Context, emoteEvent event_store.EmoteServiceEvent) erro
 		return err
 	}
 
+	txn := newrelic.FromContext(ctx)
+	ddbSeg := newrelic.DatastoreSegment{
+		StartTime:  txn.StartSegmentNow(),
+		Product:    newrelic.DatastoreDynamoDB,
+		Collection: aws.ToString(update.TableName),
+		Operation:  "UpdateItem",
+	}
 	_, err = client.UpdateItem(ctx, update)
+	ddbSeg.End()
 	if err != nil {
 		if _, ok := errors.AsType[*types.ConditionalCheckFailedException](err); ok {
 			slog.InfoContext(ctx, "idempotent skip",

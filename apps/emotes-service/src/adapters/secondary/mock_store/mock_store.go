@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/newrelic/go-agent/v3/newrelic"
 )
 
 var client *dynamodb.Client
@@ -25,12 +26,20 @@ func init() {
 func Lookup(ctx context.Context, path string) (string, error) {
 	tableName := environment.GetOrFatal("MOCK_RESPONSES_TABLE")
 
+	txn := newrelic.FromContext(ctx)
+	ddbSeg := newrelic.DatastoreSegment{
+		StartTime:  txn.StartSegmentNow(),
+		Product:    newrelic.DatastoreDynamoDB,
+		Collection: tableName,
+		Operation:  "GetItem",
+	}
 	result, err := client.GetItem(ctx, &dynamodb.GetItemInput{
 		TableName: aws.String(tableName),
 		Key: map[string]types.AttributeValue{
 			"PK": &types.AttributeValueMemberS{Value: path},
 		},
 	})
+	ddbSeg.End()
 	if err != nil {
 		slog.ErrorContext(ctx, "Error reading mock response", "path", path, "error", err)
 		return "", err
