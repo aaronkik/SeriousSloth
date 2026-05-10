@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/newrelic/go-agent/v3/newrelic"
 )
 
 func QueryActiveEmotes(ctx context.Context, aggregateId string) ([]ProjectionItem, error) {
@@ -20,8 +21,11 @@ func QueryRemovedEmotes(ctx context.Context, aggregateId string) ([]ProjectionIt
 }
 
 func queryEmotesByStatus(ctx context.Context, aggregateId, status string) ([]ProjectionItem, error) {
+	txn := newrelic.FromContext(ctx)
+	tableName := environment.GetOrFatal("EVENTS_PROJECTION_TABLE_NAME")
+
 	paginator := dynamodb.NewQueryPaginator(client, &dynamodb.QueryInput{
-		TableName:              aws.String(environment.GetOrFatal("EVENTS_PROJECTION_TABLE_NAME")),
+		TableName:              aws.String(tableName),
 		KeyConditionExpression: aws.String("PK = :pk AND begins_with(SK, :sk)"),
 		FilterExpression:       aws.String("#status = :status"),
 		ExpressionAttributeNames: map[string]string{
@@ -36,7 +40,20 @@ func queryEmotesByStatus(ctx context.Context, aggregateId, status string) ([]Pro
 
 	var items []ProjectionItem
 	for paginator.HasMorePages() {
+		ddbSeg := newrelic.DatastoreSegment{
+			StartTime:          txn.StartSegmentNow(),
+			Product:            newrelic.DatastoreDynamoDB,
+			Collection:         tableName,
+			Operation:          "Query",
+			ParameterizedQuery: "PK = :pk AND begins_with(SK, :sk)",
+			QueryParameters: map[string]any{
+				":pk":     aggregateId,
+				":sk":     "EMOTE#",
+				":status": status,
+			},
+		}
 		page, err := paginator.NextPage(ctx)
+		ddbSeg.End()
 		if err != nil {
 			slog.ErrorContext(ctx, "Error querying projections", "aggregateId", aggregateId, "status", status, "error", err)
 			return nil, err
