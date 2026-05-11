@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"emotes-service/src/adapters/secondary/event_store"
 	"emotes-service/src/apigw"
 	"emotes-service/src/environment"
 	getremovedemotes "emotes-service/src/use-cases/get-removed-emotes"
 	"log/slog"
+	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambdacontext"
@@ -20,6 +22,10 @@ type removedEmoteDTO struct {
 
 func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	channelId := request.PathParameters["channelId"]
+
+	if strings.EqualFold(channelId, event_store.GlobalEmotesAggregateId) {
+		channelId = event_store.GlobalEmotesAggregateId
+	}
 
 	if channelId == "" {
 		return apigw.JSONResponse(ctx, 400, map[string]string{"message": "channelId is required"})
