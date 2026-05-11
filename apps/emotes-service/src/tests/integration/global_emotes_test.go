@@ -208,6 +208,19 @@ func Test_Api_Returns_Active_Emote_For_Channel(t *testing.T) {
 	require.True(testStartTime.Before(addedAt))
 }
 
+func Test_Api_Returns_Active_Emote_For_Lowercase_Global_Channel(t *testing.T) {
+	require := require.New(t)
+
+	body, status, err := getEmotes(ctx, apiInvokeUrl, apiKey, "global")
+	require.NoError(err)
+	require.Equal(http.StatusOK, status)
+
+	var parsed []apiActiveEmote
+	require.NoError(json.Unmarshal(body, &parsed))
+	require.Len(parsed, 1)
+	require.Equal("1", parsed[0].Emote.Id)
+}
+
 func Test_Api_Returns_Forbidden_Without_Api_Key(t *testing.T) {
 	require := require.New(t)
 
@@ -363,6 +376,19 @@ func Test_Api_Returns_Removed_Emote_For_Channel(t *testing.T) {
 	removedAt, err := time.Parse(time.RFC3339Nano, emote.RemovedAt)
 	require.NoError(err)
 	require.True(testStartTime.Before(removedAt))
+}
+
+func Test_Api_Returns_Removed_Emote_For_Lowercase_Global_Channel(t *testing.T) {
+	require := require.New(t)
+
+	body, status, err := getRemovedEmotes(ctx, apiInvokeUrl, apiKey, "global")
+	require.NoError(err)
+	require.Equal(http.StatusOK, status)
+
+	var parsed []apiRemovedEmote
+	require.NoError(json.Unmarshal(body, &parsed))
+	require.Len(parsed, 1)
+	require.Equal("1", parsed[0].Emote.Id)
 }
 
 func loadAwsConfig(t *testing.T) aws.Config {
