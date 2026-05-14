@@ -19,7 +19,7 @@ const EmotesList = ({ emotes }: Props) => (
                 alt={`${emote.name} emote`}
                 data-testid={`emoteImage${index}`}
                 src={emote.images.url_4x}
-                style={{ objectFit: 'contain' }}
+                className='absolute inset-0 h-full w-full object-contain'
               />
             </div>
             <p className='tracking-wide' data-testid={`emoteName${index}`}>
