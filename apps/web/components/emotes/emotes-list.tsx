@@ -1,14 +1,14 @@
 import { Card } from '~/components/shared';
-import type { ActiveEmote } from '~/lib/api/emotes-service';
+import type { Emote } from '~/lib/api/emotes-service';
 
 type Props = {
-  emotes: ActiveEmote[];
+  emotes: Array<{ emote: Emote }>;
 };
 
 const EmotesList = ({ emotes }: Props) => (
   <ul
     data-testid='emoteList'
-    className='flex flex-row flex-wrap justify-center gap-6 py-8'
+    className='flex flex-row flex-wrap justify-center gap-6 py-12'
   >
     {emotes.map(({ emote }, index) => (
       <li key={emote.id}>

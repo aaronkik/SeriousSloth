@@ -4,12 +4,13 @@ import {
   InferGetStaticPropsType,
 } from 'next';
 import Head from 'next/head';
-import { DynamicLastUpdated, EmotesList } from '~/components/emotes';
+import { DynamicLastUpdated, EmoteTabs } from '~/components/emotes';
 import { Heading } from '~/components/shared';
 import {
   Channel,
   getActiveEmotes,
   getChannels,
+  getRemovedEmotes,
 } from '~/lib/api/emotes-service';
 
 type Params = { channel: string };
@@ -37,12 +38,16 @@ export async function getStaticProps(ctx: GetStaticPropsContext<Params>) {
     return { notFound: true } as const;
   }
 
-  const activeEmotes = await getActiveEmotes(channel.id);
+  const [activeEmotes, removedEmotes] = await Promise.all([
+    getActiveEmotes(channel.id),
+    getRemovedEmotes(channel.id),
+  ]);
 
   return {
     props: {
       channel,
       activeEmotes,
+      removedEmotes,
       updatedAt: Date.now(),
     },
     revalidate: 60 * 60,
@@ -52,6 +57,7 @@ export async function getStaticProps(ctx: GetStaticPropsContext<Params>) {
 const ChannelEmotesPage = ({
   channel,
   activeEmotes,
+  removedEmotes,
   updatedAt,
 }: InferGetStaticPropsType<typeof getStaticProps> & { channel: Channel }) => (
   <>
@@ -62,7 +68,7 @@ const ChannelEmotesPage = ({
       <Heading variant='h1'>{`${channel.displayName} Emotes`}</Heading>
       <DynamicLastUpdated lastUpdated={updatedAt} />
     </div>
-    <EmotesList emotes={activeEmotes} />
+    <EmoteTabs activeEmotes={activeEmotes} removedEmotes={removedEmotes} />
   </>
 );
 
