@@ -1,27 +1,24 @@
-import { InferGetStaticPropsType } from 'next';
-import Image from 'next/image';
 import { Card } from '~/components/shared';
-import { getStaticProps } from '~/pages/global-emotes';
+import type { ActiveEmote } from '~/lib/api/emotes-service';
 
 type Props = {
-  globalEmotes: InferGetStaticPropsType<typeof getStaticProps>['globalEmotes'];
+  emotes: ActiveEmote[];
 };
 
-const GlobalEmotesList = ({ globalEmotes }: Props) => (
+const EmotesList = ({ emotes }: Props) => (
   <ul
-    data-testid='globalEmoteList'
+    data-testid='emoteList'
     className='flex flex-row flex-wrap justify-center gap-6 py-8'
   >
-    {globalEmotes.map((emote, index) => (
+    {emotes.map(({ emote }, index) => (
       <li key={emote.id}>
         <Card className='h-36 w-36 p-4'>
           <div className='flex h-full w-full flex-col items-center gap-2'>
             <div className='relative h-full w-full'>
-              <Image
+              <img
                 alt={`${emote.name} emote`}
                 data-testid={`emoteImage${index}`}
-                fill
-                src={emote.largeImageUrl}
+                src={emote.images.url_4x}
                 style={{ objectFit: 'contain' }}
               />
             </div>
@@ -35,4 +32,4 @@ const GlobalEmotesList = ({ globalEmotes }: Props) => (
   </ul>
 );
 
-export default GlobalEmotesList;
+export default EmotesList;

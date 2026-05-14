@@ -3,9 +3,9 @@ import { Card, Heading } from '../shared';
 
 const navigationRoutes = [
   {
-    path: '/global-emotes',
-    title: 'Global Emotes',
-    description: 'See current global emotes on Twitch',
+    path: '/emotes',
+    title: 'Emotes',
+    description: 'Browse Twitch emotes by channel',
   },
   {
     path: '/user-search',
