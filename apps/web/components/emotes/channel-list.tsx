@@ -1,6 +1,6 @@
-import Image from 'next/image';
 import Link from 'next/link';
-import { Card } from '~/components/shared';
+import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
+import { Card } from '~/components/ui/card';
 import type { Channel } from '~/lib/api/emotes-service';
 
 type Props = {
@@ -15,26 +15,18 @@ const ChannelList = ({ channels }: Props) => (
     {channels.map(({ id, displayName, profileImageUrl, icon }) => (
       <li key={id}>
         <Link href={`/emotes/${id}`} className='group block'>
-          <Card className='flex flex-col items-center gap-3 p-5 ring-1 ring-transparent group-hover:ring-purple-500/60'>
-            <div className='relative h-20 w-20 sm:h-24 sm:w-24'>
-              {profileImageUrl ? (
-                <Image
-                  src={profileImageUrl}
-                  alt={`${displayName} avatar`}
-                  width={96}
-                  height={96}
-                  className='h-full w-full rounded-full object-cover ring-2 ring-neutral-700'
-                />
-              ) : icon ? (
-                <div
-                  className='flex h-full w-full items-center justify-center text-5xl'
-                  aria-hidden
-                >
-                  {icon}
-                </div>
-              ) : null}
-            </div>
-            <p className='truncate text-base font-semibold text-neutral-100 group-hover:text-purple-300'>
+          <Card className='flex flex-col items-center gap-3 p-5 ring-1 ring-transparent transition-colors group-hover:ring-primary/60'>
+            {profileImageUrl ? (
+              <Avatar className='size-20 sm:size-24'>
+                <AvatarImage src={profileImageUrl} alt={`${displayName} avatar`} />
+                <AvatarFallback>{displayName.slice(0, 2)}</AvatarFallback>
+              </Avatar>
+            ) : icon ? (
+              <div className='flex size-20 items-center justify-center text-5xl sm:size-24' aria-hidden>
+                {icon}
+              </div>
+            ) : null}
+            <p className='truncate text-base font-semibold text-foreground transition-colors group-hover:text-primary'>
               {displayName}
             </p>
           </Card>

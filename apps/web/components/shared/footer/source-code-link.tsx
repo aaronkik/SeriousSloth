@@ -1,15 +1,15 @@
-import { FaGithub } from 'react-icons/fa';
+import { ExternalLink } from 'lucide-react';
 import { Link } from '~/components/shared';
 
 const SourceCodeLink = () => (
   <Link
-    className='font-medium text-neutral-100 hover:text-purple-500'
+    className='gap-2 font-medium'
     href='https://github.com/aaronkik/SeriousSloth'
     rel='noopener noreferrer'
     target='_blank'
   >
     Source code
-    <FaGithub className='ml-2 h-4 w-4' />
+    <ExternalLink className='size-4' />
   </Link>
 );
 

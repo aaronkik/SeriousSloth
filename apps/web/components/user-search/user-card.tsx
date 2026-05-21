@@ -1,4 +1,4 @@
-import { ExternalLinkIcon } from '@heroicons/react/solid';
+import { ExternalLink } from 'lucide-react';
 import Image from 'next/image';
 import { ReactNode } from 'react';
 import { Card, Heading } from '~/components/shared';
@@ -12,7 +12,7 @@ type CardSectionProps = {
 
 const CardSection = ({ title, children }: CardSectionProps) => (
   <div className='flex flex-col'>
-    <p className='text-sm font-medium uppercase tracking-wider text-neutral-400'>
+    <p className='text-sm font-medium uppercase tracking-wider text-muted-foreground'>
       {title}
     </p>
     {children}
@@ -51,13 +51,13 @@ const UserCard = ({ user }: Props) => {
             {display_name}
           </Heading>
           <a
-            className='inline-flex items-center font-medium text-purple-500 no-underline transition-all duration-75 hover:underline hover:underline-offset-4'
+            className='inline-flex items-center gap-1 font-medium text-primary no-underline transition-all duration-75 hover:underline hover:underline-offset-4'
             href={`https://twitch.tv/${login}`}
             rel='noopener noreferrer'
             target='_blank'
           >
             {`twitch.tv/${login}`}
-            <ExternalLinkIcon className='ml-1 h-4 w-4' />
+            <ExternalLink className='size-4' />
           </a>
         </div>
       </div>

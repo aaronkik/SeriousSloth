@@ -1,6 +1,6 @@
-import { ExternalLinkIcon } from '@heroicons/react/solid';
+import { ExternalLink } from 'lucide-react';
 import { ComponentPropsWithoutRef } from 'react';
-import { twMerge } from 'tailwind-merge';
+import { cn } from '~/lib/utils';
 
 type Props = {
   className?: ComponentPropsWithoutRef<'a'>['className'];
@@ -9,8 +9,8 @@ type Props = {
 
 const TwitchLink = ({ className, loginName }: Props) => (
   <a
-    className={twMerge(
-      'inline-flex items-center break-all font-medium text-purple-400 no-underline transition-all duration-75 hover:underline hover:underline-offset-4',
+    className={cn(
+      'inline-flex items-center gap-1 break-all font-medium text-primary no-underline transition-all duration-75 hover:underline hover:underline-offset-4',
       className
     )}
     href={`https://twitch.tv/${encodeURIComponent(loginName)}`}
@@ -18,9 +18,7 @@ const TwitchLink = ({ className, loginName }: Props) => (
     target='_blank'
   >
     {`twitch.tv/${loginName}`}
-    <div>
-      <ExternalLinkIcon className='ml-1 h-4 w-4' />
-    </div>
+    <ExternalLink className='size-4' />
   </a>
 );
 

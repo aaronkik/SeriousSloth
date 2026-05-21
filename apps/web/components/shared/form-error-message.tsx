@@ -1,9 +1,9 @@
 import { ComponentProps } from 'react';
-import { twMerge } from 'tailwind-merge';
+import { cn } from '~/lib/utils';
 
 const FormErrorMessage = ({ className, ...props }: ComponentProps<'p'>) => (
   <p
-    className={twMerge('text-sm text-red-500', className)}
+    className={cn('text-sm text-destructive', className)}
     role='alert'
     {...props}
   />

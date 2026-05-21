@@ -1,7 +1,7 @@
 import autoAnimate from '@formkit/auto-animate';
 import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { Button, FormErrorMessage, Input, Spinner } from '~/components/shared';
 import { usernameFormRules } from '~/constants/form';
 import { fetchUsers } from '~/lib/api';

@@ -1,5 +1,5 @@
 import { createElement, DetailedHTMLProps, HTMLAttributes } from 'react';
-import { twMerge } from 'tailwind-merge';
+import { cn } from '~/lib/utils';
 
 type Props = DetailedHTMLProps<
   HTMLAttributes<HTMLHeadingElement>,
@@ -8,8 +8,8 @@ type Props = DetailedHTMLProps<
 
 const Heading = ({ className, variant, ...props }: Props) =>
   createElement(variant, {
-    className: twMerge(
-      'text-3xl md:text-5xl tracking-wide font-bold',
+    className: cn(
+      'font-heading text-3xl md:text-5xl tracking-wide font-bold text-foreground',
       className
     ),
     ...props,

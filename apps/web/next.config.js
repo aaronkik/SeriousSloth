@@ -11,6 +11,7 @@ const nextConfig = {
     ],
   },
   reactStrictMode: true,
+  transpilePackages: ['radix-ui', 'sonner', 'lucide-react'],
 };
 
 module.exports = nextConfig;

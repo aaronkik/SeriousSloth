@@ -1,11 +1,11 @@
 import { render, RenderOptions } from '@testing-library/react';
 import { ReactNode } from 'react';
-import { ToastContainer } from 'react-toastify';
+import { Toaster } from '~/components/ui/sonner';
 
 const Wrapper = ({ children }: { children: ReactNode }) => (
   <>
     {children}
-    <ToastContainer />
+    <Toaster />
   </>
 );
 
