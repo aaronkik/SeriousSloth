@@ -17,6 +17,7 @@ cypress/screenshots
 # next.js
 .next/
 /out/
+.swc
 
 # production
 /build
