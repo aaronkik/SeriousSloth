@@ -3,10 +3,10 @@ import Head from 'next/head';
 import { ChannelList } from '~/components/emotes';
 import { Heading } from '~/components/shared';
 import { emotesTitle } from '~/constants/titles';
-import { getChannels } from '~/lib/api/emotes-service';
+import { getChannelListing } from '~/lib/api/emotes-service';
 
 export async function getStaticProps() {
-  const channels = await getChannels();
+  const channels = await getChannelListing();
 
   return {
     props: { channels },
