@@ -9,9 +9,10 @@ const UserSearchPage = () => {
       <Head>
         <title>{userSearchTitle}</title>
       </Head>
-      <Heading className='mb-2 text-center' variant='h1'>
-        User Search
-      </Heading>
+      <div className='mb-6 flex flex-col items-center gap-2 text-center'>
+        <Heading variant='h1'>User Search</Heading>
+        <p>Search Twitch users by username.</p>
+      </div>
       <UserSearch />
     </>
   );

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Card, Heading } from '../shared';
+import { Card } from '~/components/ui/card';
 
 const navigationRoutes = [
   {
@@ -17,18 +17,15 @@ const navigationRoutes = [
 
 const Navigation = () => (
   <nav>
-    <ul className='grid grid-cols-1 grid-rows-1 gap-6 sm:grid-cols-2'>
+    <ul className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
       {navigationRoutes.map(({ path, title, description }) => (
         <li key={path}>
-          <Link href={path}>
-            <Card className='items-center p-4 transition-all duration-150 hover:shadow-md hover:shadow-primary/10'>
-              <Heading
-                className='text-xl text-primary md:text-2xl'
-                variant='h2'
-              >
+          <Link href={path} className='group block'>
+            <Card className='flex flex-col items-center gap-3 p-5 text-center ring-1 ring-transparent transition-colors group-hover:ring-primary/60'>
+              <p className='text-lg font-semibold text-foreground transition-colors group-hover:text-primary'>
                 {title}
-              </Heading>
-              <p>{description}</p>
+              </p>
+              <p className='text-sm text-muted-foreground'>{description}</p>
             </Card>
           </Link>
         </li>
