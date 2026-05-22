@@ -15,7 +15,7 @@ const ChannelList = ({ channels }: Props) => (
     {channels.map(({ id, displayName, profileImageUrl, icon }) => (
       <li key={id}>
         <Link href={`/emotes/${id}`} className='group block'>
-          <Card className='flex flex-col items-center gap-3 p-5 ring-1 ring-transparent transition-colors group-hover:ring-primary/60'>
+          <Card className='flex flex-col items-center gap-3 p-5 ring-1 ring-transparent transition-all group-hover:ring-primary/60'>
             {profileImageUrl ? (
               <Avatar className='size-20 sm:size-24'>
                 <AvatarImage src={profileImageUrl} alt={`${displayName} avatar`} />
