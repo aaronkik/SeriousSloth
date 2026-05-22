@@ -40,10 +40,10 @@ const fetchEmotes = async <T>(url: string, fn: string): Promise<T> => {
 };
 
 export const getActiveEmotes = (channel: string): Promise<ActiveEmote[]> =>
-  fetchEmotes(`${apiUrl}/emotes/${channel}`, 'getActiveEmotes');
+  fetchEmotes(`${apiUrl}/v1/emotes/${channel}`, 'getActiveEmotes');
 
 export const getRemovedEmotes = (channel: string): Promise<RemovedEmote[]> =>
-  fetchEmotes(`${apiUrl}/emotes/${channel}/removed`, 'getRemovedEmotes');
+  fetchEmotes(`${apiUrl}/v1/emotes/${channel}/removed`, 'getRemovedEmotes');
 
 export interface Channel {
   id: string;
