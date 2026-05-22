@@ -3,6 +3,10 @@
   "extends": ["//"],
   "tasks": {
     "build": {
+      "env": [
+        "NEXT_PUBLIC_TWITCH_CLIENT_ID",
+        "TWITCH_CLIENT_SECRET"
+      ],
       "outputs": [".next/**", "!.next/cache/**"]
     }
   }

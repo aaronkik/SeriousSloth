@@ -1,9 +1,7 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
-    "build": {
-      "env": ["NEXT_PUBLIC_TWITCH_CLIENT_ID", "TWITCH_CLIENT_SECRET"]
-    },
+    "build": {},
     "lint": {
       "dependsOn": ["^build"]
     },
