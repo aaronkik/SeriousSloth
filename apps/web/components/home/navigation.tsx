@@ -21,8 +21,8 @@ const Navigation = () => (
       {navigationRoutes.map(({ path, title, description }) => (
         <li key={path}>
           <Link href={path} className='group block'>
-            <Card className='flex flex-col items-center gap-3 p-5 text-center ring-1 ring-transparent transition-all group-hover:ring-primary/60'>
-              <p className='text-lg font-semibold text-foreground transition-colors group-hover:text-primary'>
+            <Card className='flex flex-col items-center gap-3 p-5 text-center ring-1 ring-transparent group-hover:ring-primary/60'>
+              <p className='text-lg font-semibold text-foreground group-hover:text-primary'>
                 {title}
               </p>
               <p className='text-sm text-muted-foreground'>{description}</p>
