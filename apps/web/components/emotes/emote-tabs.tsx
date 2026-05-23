@@ -14,9 +14,9 @@ type Props = {
 const EmoteTabs = ({ activeEmotes, removedEmotes }: Props) => {
   const [tab, setTab] = useState<Tab>('active');
 
-  const tabs: Array<{ id: Tab; label: string; count: number; emotes: (ActiveEmote | RemovedEmote)[] }> = [
-    { id: 'active', label: 'Active', count: activeEmotes.length, emotes: activeEmotes },
-    { id: 'removed', label: 'Removed', count: removedEmotes.length, emotes: removedEmotes },
+  const tabs: Array<{ id: Tab; label: string; count: number; emotes: (ActiveEmote | RemovedEmote)[]; emptyMessage: string }> = [
+    { id: 'active', label: 'Active', count: activeEmotes.length, emotes: activeEmotes, emptyMessage: 'No active emotes' },
+    { id: 'removed', label: 'Removed', count: removedEmotes.length, emotes: removedEmotes, emptyMessage: 'No removed emotes' },
   ];
 
   return (
@@ -36,9 +36,9 @@ const EmoteTabs = ({ activeEmotes, removedEmotes }: Props) => {
           </TabsTrigger>
         ))}
       </TabsList>
-      {tabs.map(({ id, emotes }) => (
+      {tabs.map(({ id, emotes, emptyMessage }) => (
         <TabsContent key={id} value={id}>
-          <EmotesList emotes={emotes} />
+          <EmotesList emotes={emotes} emptyMessage={emptyMessage} />
         </TabsContent>
       ))}
     </Tabs>
