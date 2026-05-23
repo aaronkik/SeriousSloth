@@ -1,6 +1,5 @@
-import { Inbox } from 'lucide-react';
 import { Card } from '~/components/ui/card';
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia } from '~/components/ui/empty';
+import { Empty, EmptyDescription, EmptyHeader } from '~/components/ui/empty';
 import type { Emote } from '~/lib/api/emotes-service';
 
 type Props = {
@@ -13,9 +12,6 @@ const EmotesList = ({ emotes, emptyMessage = 'No emotes to display' }: Props) =>
     return (
       <Empty className='min-h-[400px] border-none'>
         <EmptyHeader>
-          <EmptyMedia variant='icon'>
-            <Inbox />
-          </EmptyMedia>
           <EmptyDescription>{emptyMessage}</EmptyDescription>
         </EmptyHeader>
       </Empty>
