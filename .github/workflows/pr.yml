@@ -36,6 +36,8 @@ jobs:
         env:
           NEXT_PUBLIC_TWITCH_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_TWITCH_CLIENT_ID }}
           TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
+          EMOTES_SERVICE_API_URL: ${{ secrets.EMOTES_SERVICE_API_URL }}
+          EMOTES_SERVICE_API_KEY: ${{ secrets.EMOTES_SERVICE_API_KEY }}
 
   ci-test:
     runs-on: ubuntu-latest
