@@ -5,11 +5,71 @@ info:
   description: Public read API for Twitch emotes.
 tags:
   - name: Emotes
+  - name: Channels
 paths:
+  /channels:
+    get:
+      operationId: Channels_list
+      description: List all tracked Twitch channels
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Channel'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Channels
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: '1.0'
+        uri: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:__GET_CHANNELS_FUNCTION_NAME__/invocations
+        passthroughBehavior: when_no_match
+    post:
+      operationId: Channels_add
+      description: Register a new Twitch channel to be tracked
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Channel'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Channels
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChannelInput'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: '1.0'
+        uri: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:__ADD_CHANNEL_FUNCTION_NAME__/invocations
+        passthroughBehavior: when_no_match
   /emotes/{channelId}:
     get:
       operationId: Emotes_list
-      description: List active emotes for a channel
+      description: List active emotes for an channelId
       parameters:
         - name: channelId
           in: path
@@ -42,7 +102,7 @@ paths:
   /emotes/{channelId}/removed:
     get:
       operationId: Emotes_listRemoved
-      description: List removed emotes for a channel
+      description: List removed emotes for an channelId
       parameters:
         - name: channelId
           in: path
@@ -87,6 +147,45 @@ components:
         addedAt:
           type: string
           format: date-time
+    Channel:
+      type: object
+      required:
+        - id
+        - twitchId
+        - displayName
+        - imageUrl
+        - addedAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        twitchId:
+          type: string
+        displayName:
+          type: string
+        imageUrl:
+          type: string
+          format: uri
+        addedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ChannelInput:
+      type: object
+      required:
+        - twitchId
+        - displayName
+        - imageUrl
+      properties:
+        twitchId:
+          type: string
+        displayName:
+          type: string
+        imageUrl:
+          type: string
+          format: uri
     Emote:
       type: object
       required:
