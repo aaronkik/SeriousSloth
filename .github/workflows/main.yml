@@ -42,7 +42,11 @@ jobs:
         run: turbo run deploy:staging --affected
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          EMOTES_SERVICE_API_URL: ${{ secrets.EMOTES_SERVICE_API_URL }}
+          EMOTES_SERVICE_API_KEY: ${{ secrets.EMOTES_SERVICE_API_KEY }}
       - name: Deploy prod
         run: turbo run deploy:prod --affected
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          EMOTES_SERVICE_API_URL: ${{ secrets.EMOTES_SERVICE_API_URL }}
+          EMOTES_SERVICE_API_KEY: ${{ secrets.EMOTES_SERVICE_API_KEY }}
