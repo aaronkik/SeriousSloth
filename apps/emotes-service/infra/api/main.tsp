@@ -34,6 +34,19 @@ model RemovedEmote {
   removedAt: utcDateTime
 }
 
+model Channel {
+  id: string;
+  twitchId: string;
+  displayName: string;
+  imageUrl: url;
+  addedAt: utcDateTime;
+  updatedAt: utcDateTime;
+}
+
+model ChannelInput {
+  twitchId: string;
+}
+
 @error
 model Error {
   message: string;
@@ -71,4 +84,38 @@ interface Emotes {
     }
   )
   listRemoved(@path channelId: string): RemovedEmote[] | Error;
+}
+
+@route("/channels")
+@tag("Channels")
+interface Channels {
+  /** List all tracked Twitch channels */
+  @get
+  @extension(
+    "x-amazon-apigateway-integration",
+    #{
+      type: "aws_proxy",
+      httpMethod: "POST",
+      payloadFormatVersion: "1.0",
+      uri: "arn:\${AWS::Partition}:apigateway:\${AWS::Region}:lambda:path/2015-03-31/functions/arn:\${AWS::Partition}:lambda:\${AWS::Region}:\${AWS::AccountId}:function:__GET_CHANNELS_FUNCTION_NAME__/invocations",
+      passthroughBehavior: "when_no_match",
+    }
+  )
+  list(): Channel[] | Error;
+
+  /** Register a new Twitch channel to be tracked */
+  @post
+  @extension(
+    "x-amazon-apigateway-integration",
+    #{
+      type: "aws_proxy",
+      httpMethod: "POST",
+      payloadFormatVersion: "1.0",
+      uri: "arn:\${AWS::Partition}:apigateway:\${AWS::Region}:lambda:path/2015-03-31/functions/arn:\${AWS::Partition}:lambda:\${AWS::Region}:\${AWS::AccountId}:function:__ADD_CHANNEL_FUNCTION_NAME__/invocations",
+      passthroughBehavior: "when_no_match",
+    }
+  )
+  add(@body channel: ChannelInput): CreatedResponse & {
+    @body channel: Channel;
+  } | Error;
 }

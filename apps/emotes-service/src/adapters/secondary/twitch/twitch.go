@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/newrelic/go-agent/v3/newrelic"
@@ -108,4 +109,66 @@ func GetGlobalEmotes(ctx context.Context, accessToken string) ([]GlobalEmote, er
 
 	slog.Info("Got global emotes", "body", globalEmotesResponse)
 	return globalEmotesResponse.Data, nil
+}
+
+type TwitchUser struct {
+	ID              string `json:"id"`
+	Login           string `json:"login"`
+	DisplayName     string `json:"display_name"`
+	ProfileImageURL string `json:"profile_image_url"`
+}
+
+type GetUsersResponse struct {
+	Data []TwitchUser `json:"data"`
+}
+
+// GetUserById fetches a single Twitch user by id. Returns (nil, nil) when
+// Twitch returns 200 with an empty data array (i.e. user not found).
+func GetUserById(ctx context.Context, accessToken, twitchId string) (*TwitchUser, error) {
+	client := &http.Client{
+		Timeout:   time.Second * 10,
+		Transport: newrelic.NewRoundTripper(nil),
+	}
+
+	base := environment.GetOrFatal("TWITCH_USERS_ENDPOINT")
+	requestUrl := fmt.Sprintf("%s?id=%s", base, url.QueryEscape(twitchId))
+
+	req, err := http.NewRequestWithContext(ctx, "GET", requestUrl, nil)
+	if err != nil {
+		slog.ErrorContext(ctx, "Error creating users request", "error", err)
+		return nil, err
+	}
+
+	twitchClientId, err := parameter.GetSecret(ctx, environment.GetOrFatal("TWITCH_CLIENT_ID_PARAM_ARN"))
+	if err != nil {
+		slog.ErrorContext(ctx, "Error getting client id", "error", err)
+		return nil, err
+	}
+
+	req.Header.Set("Client-ID", twitchClientId)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
+
+	resp, err := client.Do(req)
+	if err != nil {
+		slog.ErrorContext(ctx, "Error getting twitch user", "twitchId", twitchId, "error", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		slog.ErrorContext(ctx, "Unexpected status code from twitch users endpoint", "status", resp.StatusCode, "twitchId", twitchId)
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var usersResponse GetUsersResponse
+	if err := json.NewDecoder(resp.Body).Decode(&usersResponse); err != nil {
+		slog.ErrorContext(ctx, "Error decoding twitch users response", "error", err)
+		return nil, err
+	}
+
+	if len(usersResponse.Data) == 0 {
+		return nil, nil
+	}
+
+	return &usersResponse.Data[0], nil
 }

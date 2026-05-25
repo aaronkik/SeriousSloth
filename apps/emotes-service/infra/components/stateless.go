@@ -40,6 +40,7 @@ type routeBinding struct {
 type StatefulResource struct {
 	TwitchEmotesEventsStoreTable *dynamodb.Table
 	TwitchEmotesProjectionsTable *dynamodb.Table
+	TwitchChannelsTable          *dynamodb.Table
 }
 
 func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.ResourceOption, applicationConfig stack.ApplicationConfig, statefulResource StatefulResource) (*StatelessComponent, error) {
@@ -347,6 +348,63 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 		return nil, err
 	}
 
+	getChannelsLambda, err := components.NewLambda(ctx, "get-channels", &components.LambdaArgs{
+		Code: pulumi.NewAssetArchive(map[string]any{
+			"bootstrap": pulumi.NewFileAsset("../dist/get-channels/bootstrap"),
+		}),
+		Environment: pulumi.StringMap{
+			"CHANNELS_TABLE_NAME": pulumi.StringInput(statefulResource.TwitchChannelsTable.Name),
+		},
+		PolicyStatements: iam.GetPolicyDocumentStatementArray{
+			&iam.GetPolicyDocumentStatementArgs{
+				Effect:    pulumi.String("Allow"),
+				Actions:   pulumi.StringArray{pulumi.String("dynamodb:Query")},
+				Resources: pulumi.StringArray{statefulResource.TwitchChannelsTable.Arn},
+			},
+		},
+	}, pulumi.Parent(component), providerResource)
+	if err != nil {
+		return nil, err
+	}
+
+	addChannelLambda, err := components.NewLambda(ctx, "add-channel", &components.LambdaArgs{
+		Code: pulumi.NewAssetArchive(map[string]any{
+			"bootstrap": pulumi.NewFileAsset("../dist/add-channel/bootstrap"),
+		}),
+		Environment: pulumi.StringMap{
+			"CHANNELS_TABLE_NAME":            pulumi.StringInput(statefulResource.TwitchChannelsTable.Name),
+			"TWITCH_OAUTH_ENDPOINT":          applicationConfig.Twitch.OauthEndpoint,
+			"TWITCH_USERS_ENDPOINT":          applicationConfig.Twitch.UsersEndpoint,
+			"TWITCH_CLIENT_ID_PARAM_ARN":     pulumi.StringInput(twitchClientIdParam.Arn),
+			"TWITCH_CLIENT_SECRET_PARAM_ARN": pulumi.StringInput(twitchClientSecretParam.Arn),
+		},
+		PolicyStatements: iam.GetPolicyDocumentStatementArray{
+			&iam.GetPolicyDocumentStatementArgs{
+				Effect:    pulumi.String("Allow"),
+				Actions:   pulumi.StringArray{pulumi.String("dynamodb:PutItem")},
+				Resources: pulumi.StringArray{statefulResource.TwitchChannelsTable.Arn},
+			},
+			&iam.GetPolicyDocumentStatementArgs{
+				Effect:  pulumi.String("Allow"),
+				Actions: pulumi.StringArray{pulumi.String("ssm:GetParameter")},
+				Resources: pulumi.StringArray{
+					twitchClientIdParam.Arn,
+					twitchClientSecretParam.Arn,
+				},
+			},
+		},
+	},
+		pulumi.Parent(component),
+		providerResource,
+		pulumi.DependsOn([]pulumi.Resource{
+			twitchClientIdParam,
+			twitchClientSecretParam,
+		}),
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	bindings := []routeBinding{
 		{
 			placeholder:       "__GET_EMOTES_FUNCTION_NAME__",
@@ -359,6 +417,18 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 			permissionName:    "emotes-api-invoke-get-removed-emotes",
 			function:          getRemovedEmotesLambda.Function,
 			sourcePathPattern: "*/GET/emotes/*/removed",
+		},
+		{
+			placeholder:       "__GET_CHANNELS_FUNCTION_NAME__",
+			permissionName:    "emotes-api-invoke-get-channels",
+			function:          getChannelsLambda.Function,
+			sourcePathPattern: "*/GET/channels",
+		},
+		{
+			placeholder:       "__ADD_CHANNEL_FUNCTION_NAME__",
+			permissionName:    "emotes-api-invoke-add-channel",
+			function:          addChannelLambda.Function,
+			sourcePathPattern: "*/POST/channels",
 		},
 	}
 

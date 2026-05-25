@@ -76,6 +76,7 @@ func main() {
 
 			appConfig.Twitch.OauthEndpoint = pulumi.Sprintf("%soauth2/token", integrationComponent.MockTwitchApiUrl)
 			appConfig.Twitch.GlobalEmotesEndpoint = pulumi.Sprintf("%shelix/chat/emotes/global", integrationComponent.MockTwitchApiUrl)
+			appConfig.Twitch.UsersEndpoint = pulumi.Sprintf("%shelix/users", integrationComponent.MockTwitchApiUrl)
 		}
 
 		statefulComponent, err := components.NewStatefulComponent(ctx, providerResource)
@@ -86,6 +87,7 @@ func main() {
 		statelessComponent, err := components.NewStatelessComponent(ctx, providerResource, appConfig, components.StatefulResource{
 			TwitchEmotesEventsStoreTable: statefulComponent.TwitchEmotesEventStoreTable,
 			TwitchEmotesProjectionsTable: statefulComponent.TwitchEmotesProjectionsTable,
+			TwitchChannelsTable:          statefulComponent.TwitchChannelsTable,
 		})
 		if err != nil {
 			return err
@@ -97,6 +99,7 @@ func main() {
 			ctx.Export("syncGlobalEmotesLambdaName", statelessComponent.SyncGlobalEmotesFunction.Name)
 			ctx.Export("twitchEmotesEventStoreTable", statefulComponent.TwitchEmotesEventStoreTable.Name)
 			ctx.Export("twitchEmotesProjectionsTable", statefulComponent.TwitchEmotesProjectionsTable.Name)
+			ctx.Export("twitchChannelsTable", statefulComponent.TwitchChannelsTable.Name)
 			ctx.Export("mockTwitchResponsesTableName", integrationComponent.MockTwitchResponsesTable.Name)
 		}
 
