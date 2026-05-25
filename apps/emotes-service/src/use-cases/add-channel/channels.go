@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"emotes-service/src/adapters/secondary/channels_store"
+	"emotes-service/src/adapters/secondary/twitch"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -14,14 +15,13 @@ import (
 )
 
 var (
-	ErrInvalidInput  = errors.New("invalid channel input")
-	ErrAlreadyExists = channels_store.ErrAlreadyExists
+	ErrInvalidInput    = errors.New("invalid channel input")
+	ErrChannelNotFound = errors.New("twitch channel not found")
+	ErrAlreadyExists   = channels_store.ErrAlreadyExists
 )
 
 type Input struct {
-	TwitchId    string
-	DisplayName string
-	ImageUrl    string
+	TwitchId string
 }
 
 type Channel struct {
@@ -35,11 +35,24 @@ type Channel struct {
 
 func AddChannel(ctx context.Context, input Input) (Channel, error) {
 	twitchId := strings.TrimSpace(input.TwitchId)
-	displayName := strings.TrimSpace(input.DisplayName)
-	imageUrl := strings.TrimSpace(input.ImageUrl)
 
-	if twitchId == "" || displayName == "" || imageUrl == "" {
+	if twitchId == "" {
 		return Channel{}, ErrInvalidInput
+	}
+
+	accessToken, err := twitch.GetAccessToken(ctx)
+	if err != nil {
+		slog.ErrorContext(ctx, "twitch.GetAccessToken failed", "twitchId", twitchId, "error", err)
+		return Channel{}, err
+	}
+
+	user, err := twitch.GetUserById(ctx, accessToken, twitchId)
+	if err != nil {
+		slog.ErrorContext(ctx, "twitch.GetUserById failed", "twitchId", twitchId, "error", err)
+		return Channel{}, err
+	}
+	if user == nil {
+		return Channel{}, ErrChannelNotFound
 	}
 
 	now := time.Now().UTC().Format(time.RFC3339Nano)
@@ -48,8 +61,8 @@ func AddChannel(ctx context.Context, input Input) (Channel, error) {
 		SK:          twitchId,
 		Id:          generateId(),
 		TwitchId:    twitchId,
-		DisplayName: displayName,
-		ImageUrl:    imageUrl,
+		DisplayName: user.DisplayName,
+		ImageUrl:    user.ProfileImageURL,
 		AddedAt:     now,
 		UpdatedAt:   now,
 	}

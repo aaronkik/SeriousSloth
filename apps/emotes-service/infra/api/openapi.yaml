@@ -176,16 +176,9 @@ components:
       type: object
       required:
         - twitchId
-        - displayName
-        - imageUrl
       properties:
         twitchId:
           type: string
-        displayName:
-          type: string
-        imageUrl:
-          type: string
-          format: uri
     Emote:
       type: object
       required:

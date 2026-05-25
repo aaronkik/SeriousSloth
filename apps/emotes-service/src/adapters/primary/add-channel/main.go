@@ -16,9 +16,7 @@ import (
 )
 
 type addChannelRequest struct {
-	TwitchId    string `json:"twitchId"`
-	DisplayName string `json:"displayName"`
-	ImageUrl    string `json:"imageUrl"`
+	TwitchId string `json:"twitchId"`
 }
 
 func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -36,9 +34,7 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	}
 
 	channel, err := addchannel.AddChannel(ctx, addchannel.Input{
-		TwitchId:    body.TwitchId,
-		DisplayName: body.DisplayName,
-		ImageUrl:    body.ImageUrl,
+		TwitchId: body.TwitchId,
 	})
 	if err != nil {
 		if txn != nil {
@@ -46,7 +42,9 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 		}
 		switch {
 		case errors.Is(err, addchannel.ErrInvalidInput):
-			return apigw.JSONResponse(ctx, 400, map[string]string{"message": "twitchId, displayName and imageUrl are required"})
+			return apigw.JSONResponse(ctx, 400, map[string]string{"message": "twitchId is required"})
+		case errors.Is(err, addchannel.ErrChannelNotFound):
+			return apigw.JSONResponse(ctx, 404, map[string]string{"message": "channel not found on Twitch"})
 		case errors.Is(err, addchannel.ErrAlreadyExists):
 			return apigw.JSONResponse(ctx, 409, map[string]string{"message": "channel already exists"})
 		default:

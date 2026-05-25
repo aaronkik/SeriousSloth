@@ -1,0 +1,15 @@
+{
+  "data": [
+    {
+      "id": "200",
+      "login": "bob",
+      "display_name": "Bob",
+      "type": "",
+      "broadcaster_type": "affiliate",
+      "description": "bob channel",
+      "profile_image_url": "https://cdn.twitch/200.png",
+      "offline_image_url": "",
+      "created_at": "2021-06-15T00:00:00Z"
+    }
+  ]
+}

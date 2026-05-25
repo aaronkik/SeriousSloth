@@ -45,8 +45,6 @@ model Channel {
 
 model ChannelInput {
   twitchId: string;
-  displayName: string;
-  imageUrl: url;
 }
 
 @error

@@ -372,7 +372,11 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 			"bootstrap": pulumi.NewFileAsset("../dist/add-channel/bootstrap"),
 		}),
 		Environment: pulumi.StringMap{
-			"CHANNELS_TABLE_NAME": pulumi.StringInput(statefulResource.TwitchChannelsTable.Name),
+			"CHANNELS_TABLE_NAME":            pulumi.StringInput(statefulResource.TwitchChannelsTable.Name),
+			"TWITCH_OAUTH_ENDPOINT":          applicationConfig.Twitch.OauthEndpoint,
+			"TWITCH_USERS_ENDPOINT":          applicationConfig.Twitch.UsersEndpoint,
+			"TWITCH_CLIENT_ID_PARAM_ARN":     pulumi.StringInput(twitchClientIdParam.Arn),
+			"TWITCH_CLIENT_SECRET_PARAM_ARN": pulumi.StringInput(twitchClientSecretParam.Arn),
 		},
 		PolicyStatements: iam.GetPolicyDocumentStatementArray{
 			&iam.GetPolicyDocumentStatementArgs{
@@ -380,8 +384,23 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 				Actions:   pulumi.StringArray{pulumi.String("dynamodb:PutItem")},
 				Resources: pulumi.StringArray{statefulResource.TwitchChannelsTable.Arn},
 			},
+			&iam.GetPolicyDocumentStatementArgs{
+				Effect:  pulumi.String("Allow"),
+				Actions: pulumi.StringArray{pulumi.String("ssm:GetParameter")},
+				Resources: pulumi.StringArray{
+					twitchClientIdParam.Arn,
+					twitchClientSecretParam.Arn,
+				},
+			},
 		},
-	}, pulumi.Parent(component), providerResource)
+	},
+		pulumi.Parent(component),
+		providerResource,
+		pulumi.DependsOn([]pulumi.Resource{
+			twitchClientIdParam,
+			twitchClientSecretParam,
+		}),
+	)
 	if err != nil {
 		return nil, err
 	}

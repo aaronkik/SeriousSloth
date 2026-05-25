@@ -76,6 +76,7 @@ func main() {
 
 			appConfig.Twitch.OauthEndpoint = pulumi.Sprintf("%soauth2/token", integrationComponent.MockTwitchApiUrl)
 			appConfig.Twitch.GlobalEmotesEndpoint = pulumi.Sprintf("%shelix/chat/emotes/global", integrationComponent.MockTwitchApiUrl)
+			appConfig.Twitch.UsersEndpoint = pulumi.Sprintf("%shelix/users", integrationComponent.MockTwitchApiUrl)
 		}
 
 		statefulComponent, err := components.NewStatefulComponent(ctx, providerResource)
