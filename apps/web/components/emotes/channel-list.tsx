@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
 import { Card } from '~/components/ui/card';
-import { channelSlug, type Channel } from '~/lib/api/emotes-service';
+import { channelSlug, type Channel } from '~/lib/api/channels';
 
 type Props = {
   channels: Channel[];

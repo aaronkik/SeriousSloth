@@ -3,12 +3,11 @@ import Head from 'next/head';
 import { DynamicLastUpdated, EmoteTabs } from '~/components/emotes';
 import { Heading } from '~/components/shared';
 import {
-  channelSlug,
-  type Channel,
   getActiveEmotes,
   getChannels,
   getRemovedEmotes,
 } from '~/lib/api/emotes-service';
+import { channelSlug, type Channel } from '~/lib/api/channels';
 
 type Params = { channel: string };
 
