@@ -12,13 +12,13 @@ const ChannelList = ({ channels }: Props) => (
     data-testid='channelList'
     className='grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5'
   >
-    {channels.map(({ id, displayName, profileImageUrl, icon }) => (
+    {channels.map(({ id, displayName, imageUrl, icon }) => (
       <li key={id}>
         <Link href={`/emotes/${id}`} className='group block'>
           <Card className='flex flex-col items-center gap-3 p-5 ring-1 ring-transparent group-hover:ring-primary/60'>
-            {profileImageUrl ? (
+            {imageUrl ? (
               <Avatar className='size-20 sm:size-24'>
-                <AvatarImage src={profileImageUrl} alt={`${displayName} avatar`} />
+                <AvatarImage src={imageUrl} alt={`${displayName} avatar`} />
                 <AvatarFallback>{displayName.slice(0, 2)}</AvatarFallback>
               </Avatar>
             ) : icon ? (

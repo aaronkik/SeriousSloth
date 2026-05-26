@@ -48,19 +48,20 @@ export const getRemovedEmotes = (channel: string): Promise<RemovedEmote[]> =>
 export interface Channel {
   id: string;
   displayName: string;
-  profileImageUrl?: string;
+  imageUrl?: string;
   icon?: string;
 }
 
-// TODO: replace body with `fetch(`${apiUrl}/channels`, { headers: { 'x-api-key': apiKey } })`
-// once the emotes-service exposes a list-channels endpoint.
-export const getChannels = async (): Promise<Channel[]> => [
-  { id: 'global', displayName: 'Global' },
-];
+const GLOBAL_CHANNEL: Channel = {
+  id: 'global',
+  displayName: 'Global',
+  icon: '🌐',
+};
 
-// TODO: replace with real channel list enriched via Twitch Get Users
-// (batch ids, map profile_image_url -> profileImageUrl, broadcaster_type ->
-// broadcasterType). Mock data for prototype only.
-export const getChannelListing = async (): Promise<Channel[]> => [
-  { id: 'global', displayName: 'Global', icon: '🌐' },
-];
+export const getChannels = async (): Promise<Channel[]> => {
+  const channels = await fetchEmotes<Channel[]>(
+    `${apiUrl}/channels`,
+    'getChannels'
+  );
+  return [GLOBAL_CHANNEL, ...channels];
+};

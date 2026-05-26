@@ -1,8 +1,4 @@
-import {
-  GetStaticPaths,
-  GetStaticPropsContext,
-  InferGetStaticPropsType,
-} from 'next';
+import { GetServerSidePropsContext, InferGetServerSidePropsType } from 'next';
 import Head from 'next/head';
 import { DynamicLastUpdated, EmoteTabs } from '~/components/emotes';
 import { Heading } from '~/components/shared';
@@ -15,16 +11,14 @@ import {
 
 type Params = { channel: string };
 
-export const getStaticPaths: GetStaticPaths<Params> = async () => {
-  const channels = await getChannels();
+export async function getServerSideProps(
+  ctx: GetServerSidePropsContext<Params>
+) {
+  ctx.res.setHeader(
+    'Cache-Control',
+    'public, s-maxage=300, stale-while-revalidate'
+  );
 
-  return {
-    paths: channels.map(({ id }) => ({ params: { channel: id } })),
-    fallback: 'blocking',
-  };
-};
-
-export async function getStaticProps(ctx: GetStaticPropsContext<Params>) {
   const channelId = ctx.params?.channel;
 
   if (!channelId) {
@@ -50,7 +44,6 @@ export async function getStaticProps(ctx: GetStaticPropsContext<Params>) {
       removedEmotes,
       updatedAt: Date.now(),
     },
-    revalidate: 60 * 60,
   };
 }
 
@@ -59,7 +52,9 @@ const ChannelEmotesPage = ({
   activeEmotes,
   removedEmotes,
   updatedAt,
-}: InferGetStaticPropsType<typeof getStaticProps> & { channel: Channel }) => (
+}: InferGetServerSidePropsType<typeof getServerSideProps> & {
+  channel: Channel;
+}) => (
   <>
     <Head>
       <title>{`${channel.displayName} Emotes | SeriousSloth`}</title>
