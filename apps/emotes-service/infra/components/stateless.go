@@ -5,7 +5,6 @@ import (
 	"emotes-service/infra/components/shared"
 	"emotes-service/infra/stack"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -421,16 +420,10 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 	channelSyncQueue, err := sqs.NewQueue(ctx, "channel-sync-queue", &sqs.QueueArgs{
 		VisibilityTimeoutSeconds: pulumi.Int(60),
 		MessageRetentionSeconds:  pulumi.Int((time.Hour * 24 * 4) / time.Second),
-		RedrivePolicy: channelSyncDlq.Arn.ApplyT(func(arn string) (string, error) {
-			payload, err := json.Marshal(map[string]any{
-				"deadLetterTargetArn": arn,
-				"maxReceiveCount":     3,
-			})
-			if err != nil {
-				return "", err
-			}
-			return string(payload), nil
-		}).(pulumi.StringOutput),
+		RedrivePolicy: pulumi.JSONMarshal(pulumi.Map{
+			"deadLetterTargetArn": channelSyncDlq.Arn,
+			"maxReceiveCount":     pulumi.Int(3),
+		}),
 	},
 		pulumi.Parent(component),
 		providerResource,
