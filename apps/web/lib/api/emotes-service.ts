@@ -45,23 +45,51 @@ export const getActiveEmotes = (channel: string): Promise<ActiveEmote[]> =>
 export const getRemovedEmotes = (channel: string): Promise<RemovedEmote[]> =>
   fetchEmotes(`${apiUrl}/v1/emotes/${channel}/removed`, 'getRemovedEmotes');
 
-export interface Channel {
-  id: string;
+export interface GlobalChannel {
+  type: 'global';
+  id: 'global';
   displayName: string;
-  imageUrl?: string;
-  icon?: string;
+  icon: string;
 }
 
-const GLOBAL_CHANNEL: Channel = {
+export interface TwitchChannel {
+  type: 'twitch';
+  id: string;
+  twitchId: string;
+  displayName: string;
+  imageUrl: string;
+}
+
+export type Channel = GlobalChannel | TwitchChannel;
+
+export const channelSlug = (channel: Channel): string =>
+  channel.type === 'global' ? 'global' : channel.twitchId;
+
+interface ChannelDto {
+  id: string;
+  twitchId: string;
+  displayName: string;
+  imageUrl: string;
+}
+
+const GLOBAL_CHANNEL: GlobalChannel = {
+  type: 'global',
   id: 'global',
   displayName: 'Global',
   icon: '🌐',
 };
 
 export const getChannels = async (): Promise<Channel[]> => {
-  const channels = await fetchEmotes<Channel[]>(
+  const channels = await fetchEmotes<ChannelDto[]>(
     `${apiUrl}/v1/channels`,
     'getChannels'
   );
-  return [GLOBAL_CHANNEL, ...channels];
+  const twitchChannels: TwitchChannel[] = channels.map((c) => ({
+    type: 'twitch',
+    id: c.id,
+    twitchId: c.twitchId,
+    displayName: c.displayName,
+    imageUrl: c.imageUrl,
+  }));
+  return [GLOBAL_CHANNEL, ...twitchChannels];
 };

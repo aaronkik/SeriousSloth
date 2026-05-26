@@ -3,7 +3,8 @@ import Head from 'next/head';
 import { DynamicLastUpdated, EmoteTabs } from '~/components/emotes';
 import { Heading } from '~/components/shared';
 import {
-  Channel,
+  channelSlug,
+  type Channel,
   getActiveEmotes,
   getChannels,
   getRemovedEmotes,
@@ -19,14 +20,14 @@ export async function getServerSideProps(
     'public, s-maxage=300, stale-while-revalidate'
   );
 
-  const channelId = ctx.params?.channel;
+  const channelParam = ctx.params?.channel;
 
-  if (!channelId) {
+  if (!channelParam) {
     return { notFound: true } as const;
   }
 
   const channels = await getChannels();
-  const channel = channels.find(({ id }) => id === channelId);
+  const channel = channels.find((c) => channelSlug(c) === channelParam);
 
   if (!channel) {
     return { notFound: true } as const;
