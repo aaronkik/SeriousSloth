@@ -60,7 +60,7 @@ const GLOBAL_CHANNEL: Channel = {
 
 export const getChannels = async (): Promise<Channel[]> => {
   const channels = await fetchEmotes<Channel[]>(
-    `${apiUrl}/channels`,
+    `${apiUrl}/v1/channels`,
     'getChannels'
   );
   return [GLOBAL_CHANNEL, ...channels];
