@@ -502,7 +502,7 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 		return nil, err
 	}
 
-	channelSyncDispatcherLambda, err := components.NewLambda(ctx, "channel-sync-dispatcher", &components.LambdaArgs{
+	channelSyncDispatcherLambda, err := components.NewLambda(ctx, "channel-sync-dispatch", &components.LambdaArgs{
 		Code: pulumi.NewAssetArchive(map[string]any{
 			"bootstrap": pulumi.NewFileAsset("../dist/channel-sync-dispatcher/bootstrap"),
 		}),
@@ -531,7 +531,7 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 		return nil, err
 	}
 
-	channelSyncDispatcherSchedulerRole, err := iam.NewRole(ctx, "channel-sync-dispatcher-scheduler-role", &iam.RoleArgs{
+	channelSyncDispatcherSchedulerRole, err := iam.NewRole(ctx, "channel-sync-dispatch-scheduler-role", &iam.RoleArgs{
 		AssumeRolePolicy: iam.GetPolicyDocumentOutput(ctx, iam.GetPolicyDocumentOutputArgs{
 			Statements: iam.GetPolicyDocumentStatementArray{
 				&iam.GetPolicyDocumentStatementArgs{
@@ -564,7 +564,7 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 		return nil, err
 	}
 
-	_, err = iam.NewRolePolicy(ctx, "channel-sync-dispatcher-scheduler-role-policy", &iam.RolePolicyArgs{
+	_, err = iam.NewRolePolicy(ctx, "channel-sync-dispatch-scheduler-role-policy", &iam.RolePolicyArgs{
 		Role: channelSyncDispatcherSchedulerRole.Name,
 		Policy: iam.GetPolicyDocumentOutput(ctx, iam.GetPolicyDocumentOutputArgs{
 			Statements: iam.GetPolicyDocumentStatementArray{
@@ -589,7 +589,7 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 		return nil, err
 	}
 
-	_, err = scheduler.NewSchedule(ctx, "channel-sync-dispatcher-scheduler", &scheduler.ScheduleArgs{
+	_, err = scheduler.NewSchedule(ctx, "channel-sync-dispatch-scheduler", &scheduler.ScheduleArgs{
 		ActionAfterCompletion: pulumi.String("NONE"),
 		FlexibleTimeWindow: &scheduler.ScheduleFlexibleTimeWindowArgs{
 			Mode: pulumi.String("OFF"),
