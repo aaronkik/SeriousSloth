@@ -2,13 +2,10 @@ package addchannel
 
 import (
 	"context"
-	"crypto/rand"
 	"emotes-service/src/adapters/secondary/channels_store"
 	"emotes-service/src/adapters/secondary/twitch"
-	"encoding/hex"
+	"emotes-service/src/ids"
 	"errors"
-	"fmt"
-	"log"
 	"log/slog"
 	"strings"
 	"time"
@@ -59,7 +56,7 @@ func AddChannel(ctx context.Context, input Input) (Channel, error) {
 	item := channels_store.ChannelItem{
 		PK:          channels_store.ChannelsPartitionKey,
 		SK:          twitchId,
-		Id:          generateId(),
+		Id:          ids.New("chnl_"),
 		TwitchId:    twitchId,
 		DisplayName: user.DisplayName,
 		ImageUrl:    user.ProfileImageURL,
@@ -85,11 +82,3 @@ func AddChannel(ctx context.Context, input Input) (Channel, error) {
 	}, nil
 }
 
-func generateId() string {
-	bytes := make([]byte, 12)
-	_, err := rand.Read(bytes)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return fmt.Sprintf("chnl_%s", hex.EncodeToString(bytes))
-}

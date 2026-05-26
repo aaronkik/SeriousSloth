@@ -2,10 +2,9 @@ package projections_store
 
 import (
 	"context"
-	"crypto/rand"
 	"emotes-service/src/adapters/secondary/event_store"
 	"emotes-service/src/environment"
-	"encoding/hex"
+	"emotes-service/src/ids"
 	"errors"
 	"fmt"
 	"log"
@@ -93,7 +92,7 @@ func buildProjectionUpdate(ctx context.Context, emoteEvent event_store.EmoteServ
 			},
 			ExpressionAttributeValues: map[string]types.AttributeValue{
 				":active":  &types.AttributeValueMemberS{Value: "ACTIVE"},
-				":id":      &types.AttributeValueMemberS{Value: generateId()},
+				":id":      &types.AttributeValueMemberS{Value: ids.New("es_prj_")},
 				":emoteId": &types.AttributeValueMemberS{Value: emoteEvent.EmoteId},
 				":emote":   emoteAttr,
 				":null":    &types.AttributeValueMemberNULL{Value: true},
@@ -132,15 +131,6 @@ func buildProjectionUpdate(ctx context.Context, emoteEvent event_store.EmoteServ
 
 	slog.ErrorContext(ctx, "Unhandled event", "eventName", emoteEvent.EventName, "event", emoteEvent)
 	return nil, fmt.Errorf("unhandled event: %s", emoteEvent.EventName)
-}
-
-func generateId() string {
-	bytes := make([]byte, 12)
-	_, err := rand.Read(bytes)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return fmt.Sprintf("es_prj_%s", hex.EncodeToString(bytes))
 }
 
 func Persist(ctx context.Context, emoteEvent event_store.EmoteServiceEvent) error {

@@ -2,12 +2,10 @@ package syncglobalemotes
 
 import (
 	"context"
-	"crypto/rand"
 	"emotes-service/src/adapters/secondary/event_store"
 	"emotes-service/src/adapters/secondary/twitch"
-	"encoding/hex"
+	"emotes-service/src/ids"
 	"fmt"
-	"log"
 	"sort"
 	"time"
 
@@ -119,7 +117,7 @@ func createEmoteEvent(in createEmoteEventInput) event_store.EmoteServiceEvent {
 		Emote:       in.Emote,
 		EmoteId:     in.EmoteId,
 		EventName:   in.EventName,
-		Id:          generateId(),
+		Id:          ids.New("es_"),
 		Kind:        "EVENT",
 		Sequence:    in.Sequence,
 	}
@@ -127,14 +125,6 @@ func createEmoteEvent(in createEmoteEventInput) event_store.EmoteServiceEvent {
 
 func generateEventSequence(n int) string {
 	return fmt.Sprintf("%07d", n)
-}
-
-func generateId() string {
-	bytes := make([]byte, 12)
-	if _, err := rand.Read(bytes); err != nil {
-		log.Fatal(err)
-	}
-	return fmt.Sprintf("es_%s", hex.EncodeToString(bytes))
 }
 
 // FetchEmotesFunc fetches the Twitch emotes for a given aggregate. The
