@@ -33,6 +33,20 @@ export interface RemovedEmote {
   removedAt: string;
 }
 
+export interface EmoteListEntry {
+  id: string;
+  name: string;
+  emoteUrl: string;
+}
+
+export interface ActiveEmoteEntry extends EmoteListEntry {
+  addedAt: string;
+}
+
+export interface RemovedEmoteEntry extends EmoteListEntry {
+  removedAt: string;
+}
+
 const fetchEmotes = async <T>(url: string, fn: string): Promise<T> => {
   const res = await fetch(url, { headers: { 'x-api-key': apiKey } });
 

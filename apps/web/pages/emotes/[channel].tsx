@@ -6,8 +6,11 @@ import {
   getActiveEmotes,
   getChannels,
   getRemovedEmotes,
+  type ActiveEmoteEntry,
+  type RemovedEmoteEntry,
 } from '~/lib/api/emotes-service';
 import { channelSlug, type Channel } from '~/lib/api/channels';
+import { buildEmoteUrl } from '~/lib/helpers';
 
 type Params = { channel: string };
 
@@ -32,10 +35,28 @@ export async function getServerSideProps(
     return { notFound: true } as const;
   }
 
-  const [activeEmotes, removedEmotes] = await Promise.all([
+  const [rawActiveEmotes, rawRemovedEmotes] = await Promise.all([
     getActiveEmotes(channelParam),
     getRemovedEmotes(channelParam),
   ]);
+
+  const activeEmotes: ActiveEmoteEntry[] = rawActiveEmotes.map(
+    ({ emote, addedAt }) => ({
+      id: emote.id,
+      name: emote.name,
+      emoteUrl: buildEmoteUrl(emote),
+      addedAt,
+    })
+  );
+
+  const removedEmotes: RemovedEmoteEntry[] = rawRemovedEmotes.map(
+    ({ emote, removedAt }) => ({
+      id: emote.id,
+      name: emote.name,
+      emoteUrl: buildEmoteUrl(emote),
+      removedAt,
+    })
+  );
 
   return {
     props: {
