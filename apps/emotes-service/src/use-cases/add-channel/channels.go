@@ -81,4 +81,3 @@ func AddChannel(ctx context.Context, input Input) (Channel, error) {
 		UpdatedAt:   item.UpdatedAt,
 	}, nil
 }
-
