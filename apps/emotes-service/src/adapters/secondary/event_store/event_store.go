@@ -3,8 +3,10 @@ package event_store
 import (
 	"context"
 	"emotes-service/src/environment"
+	"errors"
 	"log"
 	"log/slog"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -25,6 +27,22 @@ func init() {
 }
 
 const GlobalEmotesAggregateId = "GLOBAL"
+
+func ChannelAggregateId(twitchId string) string {
+	return "CHANNEL#" + twitchId
+}
+
+var ErrInvalidChannelId = errors.New("invalid channelId")
+
+func AggregateIdFromChannelId(channelId string) (string, error) {
+	if channelId == "" {
+		return "", ErrInvalidChannelId
+	}
+	if strings.EqualFold(channelId, GlobalEmotesAggregateId) {
+		return GlobalEmotesAggregateId, nil
+	}
+	return ChannelAggregateId(channelId), nil
+}
 
 type EmoteServiceEventEmoteImages struct {
 	URL1X string `dynamodbav:"url_1x"`

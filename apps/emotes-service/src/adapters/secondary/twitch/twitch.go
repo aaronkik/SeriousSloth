@@ -111,6 +111,52 @@ func GetGlobalEmotes(ctx context.Context, accessToken string) ([]GlobalEmote, er
 	return globalEmotesResponse.Data, nil
 }
 
+func GetChannelEmotes(ctx context.Context, accessToken, broadcasterId string) ([]GlobalEmote, error) {
+	client := &http.Client{
+		Timeout:   time.Second * 10,
+		Transport: newrelic.NewRoundTripper(nil),
+	}
+
+	base := environment.GetOrFatal("TWITCH_CHANNEL_EMOTES_ENDPOINT")
+	requestUrl := fmt.Sprintf("%s?broadcaster_id=%s", base, url.QueryEscape(broadcasterId))
+
+	req, err := http.NewRequestWithContext(ctx, "GET", requestUrl, nil)
+	if err != nil {
+		slog.ErrorContext(ctx, "Error creating channel emotes request", "error", err)
+		return nil, err
+	}
+
+	twitchClientId, err := parameter.GetSecret(ctx, environment.GetOrFatal("TWITCH_CLIENT_ID_PARAM_ARN"))
+	if err != nil {
+		slog.ErrorContext(ctx, "Error getting client id", "error", err)
+		return nil, err
+	}
+
+	req.Header.Set("Client-ID", twitchClientId)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
+
+	resp, err := client.Do(req)
+	if err != nil {
+		slog.ErrorContext(ctx, "Error getting channel emotes", "broadcasterId", broadcasterId, "error", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		slog.ErrorContext(ctx, "Unexpected status code from channel emotes endpoint", "status", resp.StatusCode, "broadcasterId", broadcasterId)
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var emotesResponse GlobalEmotesResponse
+	if err := json.NewDecoder(resp.Body).Decode(&emotesResponse); err != nil {
+		slog.ErrorContext(ctx, "Error decoding channel emotes response", "error", err)
+		return nil, err
+	}
+
+	slog.InfoContext(ctx, "Got channel emotes", "broadcasterId", broadcasterId, "count", len(emotesResponse.Data))
+	return emotesResponse.Data, nil
+}
+
 type TwitchUser struct {
 	ID              string `json:"id"`
 	Login           string `json:"login"`
