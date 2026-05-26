@@ -57,6 +57,7 @@ func Test_Channels_Api(t *testing.T) {
 	clearTable(t, testCtx, ddb, channelsTable)
 
 	channelsUrl := invokeUrl + "/channels"
+	channelUrl := invokeUrl + "/channel"
 	testStart := time.Now()
 
 	t.Run("post creates two channels populated from twitch", func(t *testing.T) {
@@ -72,7 +73,7 @@ func Test_Channels_Api(t *testing.T) {
 		}
 
 		for _, c := range cases {
-			body, status, err := postChannel(testCtx, channelsUrl, key, c.twitchId)
+			body, status, err := postChannel(testCtx, channelUrl, key, c.twitchId)
 			require.NoError(err)
 			require.Equalf(http.StatusCreated, status, "body: %s", string(body))
 
@@ -121,7 +122,7 @@ func Test_Channels_Api(t *testing.T) {
 	t.Run("post duplicate returns 409", func(t *testing.T) {
 		require := require.New(t)
 
-		_, status, err := postChannel(testCtx, channelsUrl, key, "100")
+		_, status, err := postChannel(testCtx, channelUrl, key, "100")
 		require.NoError(err)
 		require.Equal(http.StatusConflict, status)
 	})
@@ -129,7 +130,7 @@ func Test_Channels_Api(t *testing.T) {
 	t.Run("post with empty twitchId returns 400", func(t *testing.T) {
 		require := require.New(t)
 
-		_, status, err := postChannel(testCtx, channelsUrl, key, "")
+		_, status, err := postChannel(testCtx, channelUrl, key, "")
 		require.NoError(err)
 		require.Equal(http.StatusBadRequest, status)
 	})
@@ -137,7 +138,7 @@ func Test_Channels_Api(t *testing.T) {
 	t.Run("post with unknown twitchId returns 404", func(t *testing.T) {
 		require := require.New(t)
 
-		_, status, err := postChannel(testCtx, channelsUrl, key, "999")
+		_, status, err := postChannel(testCtx, channelUrl, key, "999")
 		require.NoError(err)
 		require.Equal(http.StatusNotFound, status)
 	})

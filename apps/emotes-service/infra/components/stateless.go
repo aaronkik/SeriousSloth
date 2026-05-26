@@ -639,7 +639,7 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 			placeholder:       "__ADD_CHANNEL_FUNCTION_NAME__",
 			permissionName:    "emotes-api-invoke-add-channel",
 			function:          addChannelLambda.Function,
-			sourcePathPattern: "*/POST/channels",
+			sourcePathPattern: "*/POST/channel",
 		},
 	}
 

@@ -102,7 +102,11 @@ interface Channels {
     }
   )
   list(): Channel[] | Error;
+}
 
+@route("/channel")
+@tag("Channels")
+interface ChannelOps {
   /** Register a new Twitch channel to be tracked */
   @post
   @extension(
