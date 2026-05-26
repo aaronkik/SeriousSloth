@@ -1,46 +1,40 @@
-import {
-  GetStaticPaths,
-  GetStaticPropsContext,
-  InferGetStaticPropsType,
-} from 'next';
+import { GetServerSidePropsContext, InferGetServerSidePropsType } from 'next';
 import Head from 'next/head';
 import { DynamicLastUpdated, EmoteTabs } from '~/components/emotes';
 import { Heading } from '~/components/shared';
 import {
-  Channel,
   getActiveEmotes,
   getChannels,
   getRemovedEmotes,
 } from '~/lib/api/emotes-service';
+import { channelSlug, type Channel } from '~/lib/api/channels';
 
 type Params = { channel: string };
 
-export const getStaticPaths: GetStaticPaths<Params> = async () => {
-  const channels = await getChannels();
+export async function getServerSideProps(
+  ctx: GetServerSidePropsContext<Params>
+) {
+  ctx.res.setHeader(
+    'Cache-Control',
+    'public, s-maxage=300, stale-while-revalidate'
+  );
 
-  return {
-    paths: channels.map(({ id }) => ({ params: { channel: id } })),
-    fallback: 'blocking',
-  };
-};
+  const channelParam = ctx.params?.channel;
 
-export async function getStaticProps(ctx: GetStaticPropsContext<Params>) {
-  const channelId = ctx.params?.channel;
-
-  if (!channelId) {
+  if (!channelParam) {
     return { notFound: true } as const;
   }
 
   const channels = await getChannels();
-  const channel = channels.find(({ id }) => id === channelId);
+  const channel = channels.find((c) => channelSlug(c) === channelParam);
 
   if (!channel) {
     return { notFound: true } as const;
   }
 
   const [activeEmotes, removedEmotes] = await Promise.all([
-    getActiveEmotes(channel.id),
-    getRemovedEmotes(channel.id),
+    getActiveEmotes(channelParam),
+    getRemovedEmotes(channelParam),
   ]);
 
   return {
@@ -50,7 +44,6 @@ export async function getStaticProps(ctx: GetStaticPropsContext<Params>) {
       removedEmotes,
       updatedAt: Date.now(),
     },
-    revalidate: 60 * 60,
   };
 }
 
@@ -59,7 +52,9 @@ const ChannelEmotesPage = ({
   activeEmotes,
   removedEmotes,
   updatedAt,
-}: InferGetStaticPropsType<typeof getStaticProps> & { channel: Channel }) => (
+}: InferGetServerSidePropsType<typeof getServerSideProps> & {
+  channel: Channel;
+}) => (
   <>
     <Head>
       <title>{`${channel.displayName} Emotes | SeriousSloth`}</title>

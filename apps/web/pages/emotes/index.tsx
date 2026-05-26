@@ -1,22 +1,24 @@
-import { InferGetStaticPropsType } from 'next';
+import { GetServerSidePropsContext, InferGetServerSidePropsType } from 'next';
 import Head from 'next/head';
 import { ChannelList } from '~/components/emotes';
 import { Heading } from '~/components/shared';
 import { emotesTitle } from '~/constants/titles';
-import { getChannelListing } from '~/lib/api/emotes-service';
+import { getChannels } from '~/lib/api/emotes-service';
 
-export async function getStaticProps() {
-  const channels = await getChannelListing();
+export async function getServerSideProps(ctx: GetServerSidePropsContext) {
+  ctx.res.setHeader(
+    'Cache-Control',
+    'public, s-maxage=300, stale-while-revalidate'
+  );
 
-  return {
-    props: { channels },
-    revalidate: 60 * 60,
-  };
+  const channels = await getChannels();
+
+  return { props: { channels } };
 }
 
 const EmotesPage = ({
   channels,
-}: InferGetStaticPropsType<typeof getStaticProps>) => (
+}: InferGetServerSidePropsType<typeof getServerSideProps>) => (
   <>
     <Head>
       <title>{emotesTitle}</title>

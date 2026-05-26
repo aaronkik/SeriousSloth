@@ -1,4 +1,11 @@
 import { getEnvOrThrow } from '~/lib/helpers';
+import {
+  GLOBAL_CHANNEL,
+  type Channel,
+  type TwitchChannel,
+} from '~/lib/api/channels';
+
+export type { Channel } from '~/lib/api/channels';
 
 const apiUrl = getEnvOrThrow('EMOTES_SERVICE_API_URL');
 const apiKey = getEnvOrThrow('EMOTES_SERVICE_API_KEY');
@@ -45,22 +52,25 @@ export const getActiveEmotes = (channel: string): Promise<ActiveEmote[]> =>
 export const getRemovedEmotes = (channel: string): Promise<RemovedEmote[]> =>
   fetchEmotes(`${apiUrl}/v1/emotes/${channel}/removed`, 'getRemovedEmotes');
 
-export interface Channel {
+interface ChannelDto {
   id: string;
+  twitchId: string;
   displayName: string;
-  profileImageUrl?: string;
-  icon?: string;
+  imageUrl: string;
 }
 
-// TODO: replace body with `fetch(`${apiUrl}/channels`, { headers: { 'x-api-key': apiKey } })`
-// once the emotes-service exposes a list-channels endpoint.
-export const getChannels = async (): Promise<Channel[]> => [
-  { id: 'global', displayName: 'Global' },
-];
+export const getChannels = async (): Promise<Channel[]> => {
+  const channels = await fetchEmotes<ChannelDto[]>(
+    `${apiUrl}/v1/channels`,
+    'getChannels'
+  );
 
-// TODO: replace with real channel list enriched via Twitch Get Users
-// (batch ids, map profile_image_url -> profileImageUrl, broadcaster_type ->
-// broadcasterType). Mock data for prototype only.
-export const getChannelListing = async (): Promise<Channel[]> => [
-  { id: 'global', displayName: 'Global', icon: '🌐' },
-];
+  const twitchChannels: TwitchChannel[] = channels.map((c) => ({
+    type: 'twitch',
+    id: c.id,
+    twitchId: c.twitchId,
+    displayName: c.displayName,
+    imageUrl: c.imageUrl,
+  }));
+  return [GLOBAL_CHANNEL, ...twitchChannels];
+};
