@@ -31,4 +31,11 @@ func AnnotateRequest(ctx context.Context, req events.APIGatewayProxyRequest) {
 		}
 		txn.AddAttribute(k, v)
 	}
+
+	for k, v := range req.PathParameters {
+		if v == "" {
+			continue
+		}
+		txn.AddAttribute("request.path."+k, v)
+	}
 }
