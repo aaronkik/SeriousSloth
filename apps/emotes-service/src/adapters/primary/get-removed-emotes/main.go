@@ -21,6 +21,8 @@ type removedEmoteDTO struct {
 }
 
 func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	apigw.AnnotateRequest(ctx, request)
+
 	channelId := request.PathParameters["channelId"]
 
 	aggregateId, err := event_store.AggregateIdFromChannelId(channelId)
