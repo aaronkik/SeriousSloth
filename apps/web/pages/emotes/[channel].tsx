@@ -33,8 +33,8 @@ export async function getServerSideProps(
   }
 
   const [activeEmotes, removedEmotes] = await Promise.all([
-    getActiveEmotes(channel.id),
-    getRemovedEmotes(channel.id),
+    getActiveEmotes(channelParam),
+    getRemovedEmotes(channelParam),
   ]);
 
   return {
