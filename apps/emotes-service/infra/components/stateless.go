@@ -5,6 +5,7 @@ import (
 	"emotes-service/infra/components/shared"
 	"emotes-service/infra/stack"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -24,9 +25,11 @@ import (
 
 type StatelessComponent struct {
 	pulumi.ResourceState
-	SyncGlobalEmotesFunction *lambda.Function
-	ApiInvokeUrl             pulumi.StringOutput
-	ApiKeyId                 pulumi.IDOutput
+	SyncGlobalEmotesFunction      *lambda.Function
+	ChannelSyncDispatcherFunction *lambda.Function
+	ChannelSyncQueueUrl           pulumi.StringOutput
+	ApiInvokeUrl                  pulumi.StringOutput
+	ApiKeyId                      pulumi.IDOutput
 }
 
 // routeBinding ties an OpenAPI placeholder to a Lambda + the source path it can be invoked from.
@@ -404,6 +407,221 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 	if err != nil {
 		return nil, err
 	}
+
+	channelSyncDlq, err := sqs.NewQueue(ctx, "channel-sync-dlq", &sqs.QueueArgs{
+		MessageRetentionSeconds: pulumi.Int((time.Hour * 24 * 14) / time.Second),
+	},
+		pulumi.Parent(component),
+		providerResource,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	channelSyncQueue, err := sqs.NewQueue(ctx, "channel-sync-queue", &sqs.QueueArgs{
+		VisibilityTimeoutSeconds: pulumi.Int(60),
+		MessageRetentionSeconds:  pulumi.Int((time.Hour * 24 * 4) / time.Second),
+		RedrivePolicy: channelSyncDlq.Arn.ApplyT(func(arn string) (string, error) {
+			payload, err := json.Marshal(map[string]any{
+				"deadLetterTargetArn": arn,
+				"maxReceiveCount":     3,
+			})
+			if err != nil {
+				return "", err
+			}
+			return string(payload), nil
+		}).(pulumi.StringOutput),
+	},
+		pulumi.Parent(component),
+		providerResource,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	channelSyncLambda, err := components.NewLambda(ctx, "channel-sync", &components.LambdaArgs{
+		Code: pulumi.NewAssetArchive(map[string]any{
+			"bootstrap": pulumi.NewFileAsset("../dist/channel-sync/bootstrap"),
+		}),
+		Timeout:                      pulumi.Int(30),
+		ReservedConcurrentExecutions: pulumi.Int(10),
+		Environment: pulumi.StringMap{
+			"TWITCH_EMOTES_EVENT_STORE_TABLE": pulumi.StringInput(statefulResource.TwitchEmotesEventsStoreTable.Name),
+			"TWITCH_OAUTH_ENDPOINT":           applicationConfig.Twitch.OauthEndpoint,
+			"TWITCH_CHANNEL_EMOTES_ENDPOINT":  applicationConfig.Twitch.ChannelEmotesEndpoint,
+			"TWITCH_CLIENT_ID_PARAM_ARN":      pulumi.StringInput(twitchClientIdParam.Arn),
+			"TWITCH_CLIENT_SECRET_PARAM_ARN":  pulumi.StringInput(twitchClientSecretParam.Arn),
+		},
+		PolicyStatements: iam.GetPolicyDocumentStatementArray{
+			&iam.GetPolicyDocumentStatementArgs{
+				Effect:  pulumi.String("Allow"),
+				Actions: pulumi.StringArray{pulumi.String("ssm:GetParameter")},
+				Resources: pulumi.StringArray{
+					twitchClientIdParam.Arn,
+					twitchClientSecretParam.Arn,
+				},
+			},
+			&iam.GetPolicyDocumentStatementArgs{
+				Effect: pulumi.String("Allow"),
+				Actions: pulumi.StringArray{
+					pulumi.String("dynamodb:ConditionCheckItem"),
+					pulumi.String("dynamodb:PutItem"),
+					pulumi.String("dynamodb:Query"),
+				},
+				Resources: pulumi.StringArray{
+					statefulResource.TwitchEmotesEventsStoreTable.Arn,
+				},
+			},
+			&iam.GetPolicyDocumentStatementArgs{
+				Effect: pulumi.String("Allow"),
+				Actions: pulumi.StringArray{
+					pulumi.String("sqs:ReceiveMessage"),
+					pulumi.String("sqs:DeleteMessage"),
+					pulumi.String("sqs:GetQueueAttributes"),
+				},
+				Resources: pulumi.StringArray{channelSyncQueue.Arn},
+			},
+		},
+	},
+		pulumi.Parent(component),
+		providerResource,
+		pulumi.DependsOn([]pulumi.Resource{
+			twitchClientIdParam,
+			twitchClientSecretParam,
+		}),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = lambda.NewEventSourceMapping(ctx, "channel-sync-mapping", &lambda.EventSourceMappingArgs{
+		EventSourceArn: pulumi.StringInput(channelSyncQueue.Arn),
+		FunctionName:   pulumi.StringInput(channelSyncLambda.Function.Name),
+		BatchSize:      pulumi.Int(1),
+		FunctionResponseTypes: pulumi.StringArray{
+			pulumi.String("ReportBatchItemFailures"),
+		},
+	},
+		pulumi.Parent(component),
+		providerResource,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	channelSyncDispatcherLambda, err := components.NewLambda(ctx, "channel-sync-dispatcher", &components.LambdaArgs{
+		Code: pulumi.NewAssetArchive(map[string]any{
+			"bootstrap": pulumi.NewFileAsset("../dist/channel-sync-dispatcher/bootstrap"),
+		}),
+		Timeout: pulumi.Int(60),
+		Environment: pulumi.StringMap{
+			"CHANNELS_TABLE_NAME":    pulumi.StringInput(statefulResource.TwitchChannelsTable.Name),
+			"CHANNEL_SYNC_QUEUE_URL": pulumi.StringInput(channelSyncQueue.Url),
+		},
+		PolicyStatements: iam.GetPolicyDocumentStatementArray{
+			&iam.GetPolicyDocumentStatementArgs{
+				Effect:    pulumi.String("Allow"),
+				Actions:   pulumi.StringArray{pulumi.String("dynamodb:Query")},
+				Resources: pulumi.StringArray{statefulResource.TwitchChannelsTable.Arn},
+			},
+			&iam.GetPolicyDocumentStatementArgs{
+				Effect: pulumi.String("Allow"),
+				Actions: pulumi.StringArray{
+					pulumi.String("sqs:SendMessage"),
+					pulumi.String("sqs:SendMessageBatch"),
+				},
+				Resources: pulumi.StringArray{channelSyncQueue.Arn},
+			},
+		},
+	}, pulumi.Parent(component), providerResource)
+	if err != nil {
+		return nil, err
+	}
+
+	channelSyncDispatcherSchedulerRole, err := iam.NewRole(ctx, "channel-sync-dispatcher-scheduler-role", &iam.RoleArgs{
+		AssumeRolePolicy: iam.GetPolicyDocumentOutput(ctx, iam.GetPolicyDocumentOutputArgs{
+			Statements: iam.GetPolicyDocumentStatementArray{
+				&iam.GetPolicyDocumentStatementArgs{
+					Actions: pulumi.StringArray{pulumi.String("sts:AssumeRole")},
+					Conditions: &iam.GetPolicyDocumentStatementConditionArray{
+						&iam.GetPolicyDocumentStatementConditionArgs{
+							Test:     pulumi.String("StringEquals"),
+							Variable: pulumi.String("aws:SourceAccount"),
+							Values: pulumi.StringArray{
+								pulumi.String(accountId),
+							},
+						},
+					},
+					Principals: iam.GetPolicyDocumentStatementPrincipalArray{
+						&iam.GetPolicyDocumentStatementPrincipalArgs{
+							Type: pulumi.String("Service"),
+							Identifiers: pulumi.StringArray{
+								pulumi.String("scheduler.amazonaws.com"),
+							},
+						},
+					},
+				},
+			},
+		}).Json(),
+	},
+		pulumi.Parent(component),
+		providerResource,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = iam.NewRolePolicy(ctx, "channel-sync-dispatcher-scheduler-role-policy", &iam.RolePolicyArgs{
+		Role: channelSyncDispatcherSchedulerRole.Name,
+		Policy: iam.GetPolicyDocumentOutput(ctx, iam.GetPolicyDocumentOutputArgs{
+			Statements: iam.GetPolicyDocumentStatementArray{
+				&iam.GetPolicyDocumentStatementArgs{
+					Effect:  pulumi.String("Allow"),
+					Actions: pulumi.StringArray{pulumi.String("lambda:InvokeFunction")},
+					Resources: pulumi.StringArray{
+						channelSyncDispatcherLambda.Function.Arn,
+						pulumi.Sprintf("%s:*", channelSyncDispatcherLambda.Function.Arn),
+					},
+				},
+			},
+		}).Json(),
+	},
+		pulumi.Parent(component),
+		providerResource,
+		pulumi.DependsOn([]pulumi.Resource{
+			channelSyncDispatcherLambda,
+		}),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = scheduler.NewSchedule(ctx, "channel-sync-dispatcher-scheduler", &scheduler.ScheduleArgs{
+		ActionAfterCompletion: pulumi.String("NONE"),
+		FlexibleTimeWindow: &scheduler.ScheduleFlexibleTimeWindowArgs{
+			Mode: pulumi.String("OFF"),
+		},
+		ScheduleExpression:         pulumi.String("cron(0 * * * ? *)"),
+		ScheduleExpressionTimezone: pulumi.String("UTC"),
+		State:                      pulumi.String(schedulerState),
+		Target: &scheduler.ScheduleTargetArgs{
+			Arn:     pulumi.StringInput(channelSyncDispatcherLambda.Function.Arn),
+			RoleArn: pulumi.StringInput(channelSyncDispatcherSchedulerRole.Arn),
+			RetryPolicy: &scheduler.ScheduleTargetRetryPolicyArgs{
+				MaximumEventAgeInSeconds: nil,
+				MaximumRetryAttempts:     pulumi.Int(0),
+			},
+		},
+	},
+		pulumi.Parent(component),
+		providerResource,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	component.ChannelSyncQueueUrl = channelSyncQueue.Url
+	component.ChannelSyncDispatcherFunction = channelSyncDispatcherLambda.Function
 
 	bindings := []routeBinding{
 		{

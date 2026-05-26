@@ -6,8 +6,8 @@ import (
 	"emotes-service/src/apigw"
 	"emotes-service/src/environment"
 	getemotes "emotes-service/src/use-cases/get-emotes"
+	"errors"
 	"log/slog"
-	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambdacontext"
@@ -23,18 +23,19 @@ type activeEmoteDTO struct {
 func handler(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	channelId := request.PathParameters["channelId"]
 
-	if strings.EqualFold(channelId, event_store.GlobalEmotesAggregateId) {
-		channelId = event_store.GlobalEmotesAggregateId
+	aggregateId, err := event_store.AggregateIdFromChannelId(channelId)
+	if err != nil {
+		if errors.Is(err, event_store.ErrInvalidChannelId) {
+			return apigw.JSONResponse(ctx, 400, map[string]string{"message": "channelId must be 'global' or a numeric twitch id"})
+		}
+		slog.ErrorContext(ctx, "aggregate id translation failed", "channelId", channelId, "error", err)
+		return apigw.JSONResponse(ctx, 500, map[string]string{"message": "internal error"})
 	}
 
-	if channelId == "" {
-		return apigw.JSONResponse(ctx, 400, map[string]string{"message": "channelId is required"})
-	}
-
-	activeEmotes, err := getemotes.ActiveEmotes(ctx, channelId)
+	activeEmotes, err := getemotes.ActiveEmotes(ctx, aggregateId)
 
 	if err != nil {
-		slog.ErrorContext(ctx, "get-emotes use-case failed", "channelId", channelId, "error", err)
+		slog.ErrorContext(ctx, "get-emotes use-case failed", "channelId", channelId, "aggregateId", aggregateId, "error", err)
 		return apigw.JSONResponse(ctx, 500, map[string]string{"message": "internal error"})
 	}
 

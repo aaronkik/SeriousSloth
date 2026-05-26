@@ -137,7 +137,15 @@ func generateId() string {
 	return fmt.Sprintf("es_%s", hex.EncodeToString(bytes))
 }
 
-func Execute(ctx context.Context) error {
+// FetchEmotesFunc fetches the Twitch emotes for a given aggregate. The
+// implementation is responsible for any aggregate-specific parameters (e.g.
+// broadcaster id) — the access token is supplied by the caller.
+type FetchEmotesFunc func(ctx context.Context, accessToken string) ([]twitch.GlobalEmote, error)
+
+// ExecuteForAggregate runs the full sync pipeline for a given aggregate id:
+// fetch Twitch state, load the local aggregate, diff, and append events.
+// Both the global and per-channel syncs route through this.
+func ExecuteForAggregate(ctx context.Context, aggregateId string, fetch FetchEmotesFunc) error {
 	txn := newrelic.FromContext(ctx)
 
 	seg := txn.StartSegment("twitch.GetAccessToken")
@@ -147,15 +155,15 @@ func Execute(ctx context.Context) error {
 		return err
 	}
 
-	seg = txn.StartSegment("twitch.GetGlobalEmotes")
-	emotes, err := twitch.GetGlobalEmotes(ctx, token)
+	seg = txn.StartSegment("fetchEmotes")
+	emotes, err := fetch(ctx, token)
 	seg.End()
 	if err != nil {
 		return err
 	}
 
 	seg = txn.StartSegment("event_store.LoadEvents")
-	events, err := event_store.LoadEvents(ctx, event_store.GlobalEmotesAggregateId)
+	events, err := event_store.LoadEvents(ctx, aggregateId)
 	seg.End()
 	if err != nil {
 		return err
@@ -166,10 +174,14 @@ func Execute(ctx context.Context) error {
 	seg.End()
 
 	seg = txn.StartSegment("DecideSyncEvents")
-	newEvents := DecideSyncEvents(event_store.GlobalEmotesAggregateId, aggregate, emotes)
+	newEvents := DecideSyncEvents(aggregateId, aggregate, emotes)
 	seg.End()
 
 	seg = txn.StartSegment("event_store.AppendEvents")
 	defer seg.End()
 	return event_store.AppendEvents(ctx, newEvents)
+}
+
+func Execute(ctx context.Context) error {
+	return ExecuteForAggregate(ctx, event_store.GlobalEmotesAggregateId, twitch.GetGlobalEmotes)
 }
