@@ -3,6 +3,7 @@ import { Container, Footer, Header } from '~/components/shared';
 import './globals.css';
 import React from 'react';
 import type { Metadata } from 'next';
+import { Toaster } from '~/components/ui/sonner';
 
 const roboto = Roboto({
   display: 'swap',
@@ -31,6 +32,7 @@ export default function RootLayout({
           <Container>{children}</Container>
         </main>
         <Footer />
+        <Toaster position='top-right' />
       </body>
     </html>
   );
