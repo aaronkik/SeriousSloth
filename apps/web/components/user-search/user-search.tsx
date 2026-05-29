@@ -1,3 +1,5 @@
+'use client';
+
 import { useState } from 'react';
 import { Card } from '~/components/shared';
 import { GetUsers } from '~/types/twitch';
@@ -6,7 +8,7 @@ import User from './user';
 
 const UserSearch = () => {
   const [userResponse, setUserResponse] = useState<GetUsers | undefined>(
-    undefined
+    undefined,
   );
 
   return (
@@ -14,7 +16,7 @@ const UserSearch = () => {
       <Card className='w-full px-2 py-2 md:w-1/2 md:self-center'>
         <SearchForm setUserResponse={setUserResponse} />
       </Card>
-      {userResponse && <User userResponse={userResponse} />}
+      {userResponse ? <User userResponse={userResponse} /> : null}
     </div>
   );
 };
