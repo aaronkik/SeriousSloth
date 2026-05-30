@@ -10,6 +10,7 @@ import { Button } from '~/components/ui/button';
 import { Field, FieldDescription } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import { Spinner } from '~/components/ui/spinner';
+import { usernameSchema } from '~/app/user-search/schemas';
 
 const initialState: SearchFormState = {};
 
@@ -41,8 +42,8 @@ const UserSearchForm = ({ defaultUsername }: Props) => {
           aria-invalid={hasFormErrors}
           autoComplete='off'
           defaultValue={defaultUsername}
-          minLength={3}
-          maxLength={120}
+          minLength={usernameSchema.minLength ?? 0}
+          maxLength={usernameSchema.maxLength ?? 0}
           name='username'
           placeholder='Search...'
           required
