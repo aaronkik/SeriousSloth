@@ -1,5 +1,4 @@
 import { ExternalLink } from 'lucide-react';
-import Image from 'next/image';
 import { ReactNode } from 'react';
 import { Card, Heading } from '~/components/shared';
 import { capitaliseFirstLetter, formatDate, timeFromNow } from '~/lib/helpers';
@@ -39,9 +38,9 @@ const UserCard = ({ user }: Props) => {
   return (
     <Card className='flex w-full flex-col gap-4 p-4 md:p-6'>
       <div className='flex flex-col items-center gap-2 md:flex-row md:gap-4'>
-        <Image
+        <img
           src={profile_image_url}
-          alt='Profile image'
+          alt={`${display_name} profile image`}
           className='h-20 w-20 rounded-sm md:h-32 md:w-32'
           width={300}
           height={300}
@@ -69,33 +68,33 @@ const UserCard = ({ user }: Props) => {
           <p>{formatDate(created_at, 'LLL')}</p>
           <p className='text-sm opacity-75'>({timeFromNow(created_at)})</p>
         </CardSection>
-        {broadcaster_type && (
+        {broadcaster_type ? (
           <CardSection title='Broadcaster type'>
             <p>{capitaliseFirstLetter(broadcaster_type)}</p>
           </CardSection>
-        )}
-        {type && (
+        ) : null}
+        {type ? (
           <CardSection title='User type'>
             <p>{capitaliseFirstLetter(type).replace('_', ' ')}</p>
           </CardSection>
-        )}
+        ) : null}
       </div>
       <CardSection title='Channel description'>
         <p>{description || '(empty)'}</p>
       </CardSection>
-      {offline_image_url && (
+      {offline_image_url ? (
         <CardSection title='Offline image'>
           <div className='aspect-w-16 aspect-h-9'>
-            <Image
+            <img
               src={offline_image_url}
-              alt='Offline image'
+              alt={`${display_name} offline image`}
               className='rounded-sm'
               width={1920}
               height={1080}
             />
           </div>
         </CardSection>
-      )}
+      ) : null}
     </Card>
   );
 };

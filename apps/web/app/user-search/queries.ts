@@ -1,7 +1,7 @@
 import { fetchClientCredentials, fetchUsers } from '~/lib/twitch';
-import type { GetUsers } from '~/types/twitch';
+import { User } from '~/types/twitch';
 
-export type SearchTwitchUserResult = GetUsers | { error: string };
+export type SearchTwitchUserResult = User | null | { error: string };
 
 export const searchTwitchUser = async (
   username: string,
@@ -10,9 +10,10 @@ export const searchTwitchUser = async (
 
   try {
     const { access_token } = await fetchClientCredentials();
-    return await fetchUsers(access_token, username);
+    const { data } = await fetchUsers(access_token, username);
+    return data[0] ?? null;
   } catch (error) {
     console.error(error);
-    return { error: 'Unknown error' };
+    return { error: 'Internal error' };
   }
 };
