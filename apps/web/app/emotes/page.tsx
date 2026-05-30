@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 const getCachedChannels = async () => {
   'use cache';
-  cacheLife({ revalidate: 300 });
+  cacheLife('minutes');
   return getChannels();
 };
 
