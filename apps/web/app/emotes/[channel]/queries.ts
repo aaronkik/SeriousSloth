@@ -10,7 +10,7 @@ import {
 import { buildEmoteUrl } from '~/lib/helpers';
 
 export const getChannel = async (channelParam: string) => {
-  'use cache';
+  'use cache: remote';
   cacheLife({ revalidate: 300 });
 
   const channels = await getChannels();
@@ -19,7 +19,7 @@ export const getChannel = async (channelParam: string) => {
 };
 
 export const getEmoteData = async (channelParam: string) => {
-  'use cache';
+  'use cache: remote';
   cacheLife({ revalidate: 300 });
 
   const [rawActiveEmotes, rawRemovedEmotes] = await Promise.all([
