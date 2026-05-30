@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import ChannelEmotes from '~/app/emotes/[channel]/channel-emotes';
 import ChannelEmotesSkeleton from '~/app/emotes/[channel]/channel-emotes-skeleton';
-import { getChannelEmotes } from '~/app/emotes/[channel]/queries';
+import { getChannel } from '~/app/emotes/[channel]/queries';
 
 type PageProps = {
   params: Promise<{ channel: string }>;
@@ -12,13 +12,13 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { channel } = await params;
-  const data = await getChannelEmotes(channel);
+  const found = await getChannel(channel);
 
-  if (!data) {
+  if (!found) {
     return {};
   }
 
-  return { title: `${data.channel.displayName} Emotes | SeriousSloth` };
+  return { title: `${found.displayName} Emotes | SeriousSloth` };
 }
 
 const Page = ({ params }: PageProps) => (

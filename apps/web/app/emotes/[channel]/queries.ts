@@ -9,16 +9,18 @@ import {
 } from '~/lib/api/emotes-service';
 import { buildEmoteUrl } from '~/lib/helpers';
 
-export const getChannelEmotes = async (channelParam: string) => {
+export const getChannel = async (channelParam: string) => {
   'use cache';
   cacheLife({ revalidate: 300 });
 
   const channels = await getChannels();
-  const channel = channels.find((c) => channelSlug(c) === channelParam);
 
-  if (!channel) {
-    return null;
-  }
+  return channels.find((c) => channelSlug(c) === channelParam) ?? null;
+};
+
+export const getEmoteData = async (channelParam: string) => {
+  'use cache';
+  cacheLife({ revalidate: 300 });
 
   const [rawActiveEmotes, rawRemovedEmotes] = await Promise.all([
     getActiveEmotes(channelParam),
@@ -43,5 +45,5 @@ export const getChannelEmotes = async (channelParam: string) => {
     })
   );
 
-  return { channel, activeEmotes, removedEmotes, updatedAt: Date.now() };
+  return { activeEmotes, removedEmotes, updatedAt: Date.now() };
 };
