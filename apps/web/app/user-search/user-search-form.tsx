@@ -3,8 +3,8 @@
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import {
-  searchUsernameAction,
   type SearchFormState,
+  searchUsernameAction,
 } from '~/app/user-search/actions';
 import { Button } from '~/components/ui/button';
 import { Field, FieldDescription } from '~/components/ui/field';
@@ -32,12 +32,19 @@ interface Props {
 }
 
 const UserSearchForm = ({ defaultUsername }: Props) => {
-  const [state, formAction] = useActionState(searchUsernameAction, initialState);
+  const [state, formAction] = useActionState(
+    searchUsernameAction,
+    initialState,
+  );
   const hasFormErrors = !!state.errors?.length;
 
   return (
     <form action={formAction} role='search'>
-      <Field orientation='horizontal' data-invalid={hasFormErrors}>
+      <Field
+        className='pb-2'
+        orientation='horizontal'
+        data-invalid={hasFormErrors}
+      >
         <Input
           aria-invalid={hasFormErrors}
           autoComplete='off'
