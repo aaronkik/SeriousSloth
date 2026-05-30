@@ -1,16 +1,17 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import {
   type SearchFormState,
   searchUsernameAction,
 } from '~/app/user-search/actions';
+import { usernameSchema } from '~/app/user-search/schemas';
 import { Button } from '~/components/ui/button';
 import { Field, FieldDescription } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import { Spinner } from '~/components/ui/spinner';
-import { usernameSchema } from '~/app/user-search/schemas';
 
 const initialState: SearchFormState = {};
 
@@ -24,11 +25,11 @@ const SearchButton = () => {
   );
 };
 
-interface Props {
+interface FormProps {
   defaultUsername?: string;
 }
 
-const UserSearchForm = ({ defaultUsername }: Props) => {
+const UserSearchFormUI = ({ defaultUsername }: FormProps) => {
   const [state, formAction] = useActionState(
     searchUsernameAction,
     initialState,
@@ -63,5 +64,17 @@ const UserSearchForm = ({ defaultUsername }: Props) => {
     </form>
   );
 };
+
+const UserSearchFormWithParams = () => {
+  const searchParams = useSearchParams();
+  const defaultUsername = searchParams?.get('username') ?? undefined;
+  return <UserSearchFormUI defaultUsername={defaultUsername} />;
+};
+
+const UserSearchForm = () => (
+  <Suspense fallback={<UserSearchFormUI />}>
+    <UserSearchFormWithParams />
+  </Suspense>
+);
 
 export default UserSearchForm;
