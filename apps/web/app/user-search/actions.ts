@@ -11,7 +11,8 @@ export const searchUsernameAction = async (
   _prev: SearchFormState,
   formData: FormData,
 ): Promise<SearchFormState> => {
-  const parsed = usernameSchema.safeParse(formData.values());
+  const username = formData.get('username');
+  const parsed = usernameSchema.safeParse(username);
 
   if (!parsed.success) {
     return { errors: parsed.error.issues.map((issue) => issue.message) };
