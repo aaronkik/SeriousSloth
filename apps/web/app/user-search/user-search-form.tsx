@@ -17,11 +17,7 @@ const SearchButton = () => {
   const { pending } = useFormStatus();
 
   return (
-    <Button
-      className='min-w-20'
-      aria-disabled={pending}
-      type={pending ? 'button' : 'submit'}
-    >
+    <Button className='min-w-20' disabled={pending} type='submit'>
       {pending ? <Spinner className='size-4' /> : 'Search'}
     </Button>
   );
@@ -40,11 +36,7 @@ const UserSearchForm = ({ defaultUsername }: Props) => {
 
   return (
     <form action={formAction} role='search'>
-      <Field
-        className='pb-2'
-        orientation='horizontal'
-        data-invalid={hasFormErrors}
-      >
+      <Field orientation='horizontal' data-invalid={hasFormErrors}>
         <Input
           aria-invalid={hasFormErrors}
           autoComplete='off'
@@ -58,9 +50,15 @@ const UserSearchForm = ({ defaultUsername }: Props) => {
         />
         <SearchButton />
       </Field>
-      {state.errors?.map((error) => (
-        <FieldDescription key={error}>{error}</FieldDescription>
-      ))}
+      {state.errors ? (
+        <div className='pt-2 px-2'>
+          {state.errors.map((error) => (
+            <FieldDescription className='first:mt-2' key={error}>
+              {error}
+            </FieldDescription>
+          ))}
+        </div>
+      ) : null}
     </form>
   );
 };
