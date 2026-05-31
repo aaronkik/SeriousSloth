@@ -4,7 +4,7 @@
  * New Relic agent configuration.
  */
 exports.config = {
-  app_name: ['serious-sloth-web'],
+  app_name: 'serious-sloth-web',
   application_logging: {
     forwarding: {
       enabled: true,
