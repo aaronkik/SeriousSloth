@@ -3,10 +3,14 @@ import Script from 'next/script';
 
 export async function NewRelicBrowserTiming() {
   // @ts-ignore
-  if (newrelic.agent.collector.isConnected() === false) {
+  const agent = newrelic.agent;
+  if (!agent) {
+    return null;
+  }
+
+  if (agent.collector.isConnected() === false) {
     await new Promise((resolve) => {
-      // @ts-ignore
-      newrelic.agent.on('connected', resolve);
+      agent.on('connected', resolve);
     });
   }
 
