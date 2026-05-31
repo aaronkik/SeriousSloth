@@ -6,6 +6,7 @@
       "env": [
         "EMOTES_SERVICE_API_KEY",
         "EMOTES_SERVICE_API_URL",
+        "ENVIRONMENT",
         "NEW_RELIC_LICENSE_KEY",
         "NEXT_PUBLIC_TWITCH_CLIENT_ID",
         "TWITCH_CLIENT_SECRET",
