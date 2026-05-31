@@ -3,6 +3,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   cacheComponents: true,
+  serverExternalPackages: ['newrelic'],
   images: {
     remotePatterns: [
       {

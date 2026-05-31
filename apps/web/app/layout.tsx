@@ -1,9 +1,10 @@
+import './globals.css';
+import React, { Suspense } from 'react';
+import type { Metadata } from 'next';
 import { Roboto } from 'next/font/google';
 import { Container, Footer, Header } from '~/components/shared';
-import './globals.css';
-import React from 'react';
-import type { Metadata } from 'next';
 import { Toaster } from '~/components/ui/sonner';
+import { NewRelicBrowserTiming } from './newrelic-browser-timing';
 
 const roboto = Roboto({
   display: 'swap',
@@ -23,6 +24,9 @@ export default function RootLayout({
   return (
     <html lang='en' className={roboto.className}>
       <head>
+        <Suspense fallback={null}>
+          <NewRelicBrowserTiming />
+        </Suspense>
         <link rel='icon' href='/favicon.ico' sizes='any' />
         <link rel='icon' href='/icon.png' type='image/png' sizes='32x32' />
       </head>

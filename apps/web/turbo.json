@@ -4,10 +4,15 @@
   "tasks": {
     "build": {
       "env": [
+        "EMOTES_SERVICE_API_KEY",
+        "EMOTES_SERVICE_API_URL",
+        "ENVIRONMENT",
+        "NEW_RELIC_LICENSE_KEY",
         "NEXT_PUBLIC_TWITCH_CLIENT_ID",
         "TWITCH_CLIENT_SECRET",
-        "EMOTES_SERVICE_API_URL",
-        "EMOTES_SERVICE_API_KEY"
+        "VERCEL_ENV",
+        "VERCEL_GIT_COMMIT_SHA",
+        "VERCEL_REGION"
       ],
       "outputs": [".next/**", "!.next/cache/**"]
     }
