@@ -22,7 +22,6 @@ export async function NewRelicBrowserTiming() {
   return (
     <Script
       id='nr-browser-agent'
-      strategy='beforeInteractive'
       dangerouslySetInnerHTML={{ __html: browserTimingHeader }}
     />
   );

@@ -1,15 +1,16 @@
-import Head from 'next/head';
-import { Navigation } from '~/components/home';
+import type { Metadata } from 'next';
 import { Heading, MutedText } from '~/components/shared';
-import SlothLogo from '~/components/shared/sloth-logo';
-import { homeTitle } from '~/constants/titles';
+import SlothLogo from './sloth-logo';
+import { Navigation } from './navigation';
 
-function HomePage() {
+export const metadata: Metadata = {
+  title: 'SeriousSloth',
+  description: 'A web app that interacts with the Twitch API',
+};
+
+const Page = () => {
   return (
     <>
-      <Head>
-        <title>{homeTitle}</title>
-      </Head>
       <div className='mb-12 flex flex-col items-center gap-2'>
         <SlothLogo className='rounded-full' width={80} height={80} />
         <Heading variant='h1'>SeriousSloth</Heading>
@@ -18,6 +19,6 @@ function HomePage() {
       <Navigation />
     </>
   );
-}
+};
 
-export default HomePage;
+export default Page;

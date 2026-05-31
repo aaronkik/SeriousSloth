@@ -1,5 +1,8 @@
 'use strict';
 
+const { loadEnvConfig } = require('@next/env');
+loadEnvConfig(process.cwd());
+
 /**
  * New Relic agent configuration.
  */
@@ -13,7 +16,6 @@ exports.config = {
   logging: {
     enabled: true,
     level: 'info',
-    filepath: 'stdout',
   },
   license_key: process.env.NEW_RELIC_LICENSE_KEY,
 
