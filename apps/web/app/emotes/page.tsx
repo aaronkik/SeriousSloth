@@ -1,12 +1,11 @@
 import type { Metadata } from 'next';
 import ChannelList from '~/app/emotes/components/channel-list';
 import { Heading } from '~/components/shared';
-import { emotesTitle } from '~/constants/titles';
 import { cacheLife } from 'next/cache';
 import { getChannels } from '~/lib/api/emotes-service';
 
 export const metadata: Metadata = {
-  title: emotesTitle,
+  title: 'Emotes | SeriousSloth',
   description: 'Pick a channel to view its current Twitch emotes.',
 };
 

@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import { Container, SlothLogo } from '~/components/shared';
+import { Container } from '~/components/shared';
 import HeaderLink from './header-link';
+import SlothLogo from '~/app/sloth-logo';
 
 const Header = () => (
   <header>

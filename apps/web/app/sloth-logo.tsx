@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import { ComponentPropsWithoutRef } from 'react';
-import slothFace from '~/public/assets/sloth-face-square.png';
+import slothFace from './sloth-face-square.png';
 
 type Props = Omit<
   Partial<ComponentPropsWithoutRef<typeof Image>>,

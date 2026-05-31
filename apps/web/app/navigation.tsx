@@ -15,7 +15,7 @@ const navigationRoutes = [
   },
 ];
 
-const Navigation = () => (
+export const Navigation = () => (
   <nav>
     <ul className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
       {navigationRoutes.map(({ path, title, description }) => (
@@ -33,5 +33,3 @@ const Navigation = () => (
     </ul>
   </nav>
 );
-
-export default Navigation;
