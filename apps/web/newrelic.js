@@ -3,11 +3,25 @@
 const { loadEnvConfig } = require('@next/env');
 loadEnvConfig(process.cwd());
 
+const getDeploymentEnv = () => {
+  const env = process.env.VERCEL_ENV;
+  switch (env) {
+    case 'production':
+      return 'prod';
+    case 'preview':
+      return env;
+    case 'development':
+      return 'dev';
+    default:
+      return 'unknown';
+  }
+};
+
 /**
  * New Relic agent configuration.
  */
 exports.config = {
-  app_name: ['serious-sloth-web'],
+  app_name: [`serious-sloth-web-${getDeploymentEnv()}`],
   application_logging: {
     forwarding: {
       enabled: true,
