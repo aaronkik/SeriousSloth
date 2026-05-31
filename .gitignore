@@ -51,3 +51,6 @@ next-env.d.ts
 # Pulumi ephemeral stack configs (per-developer)
 Pulumi.*.yaml
 !Pulumi.yaml
+
+# NewRelic
+newrelic_agent.log
