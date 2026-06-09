@@ -108,11 +108,21 @@ export const getEmoteData = async (
   );
 
   const sortedActiveEmotes = Object.fromEntries(
-    Object.entries(activeEmotes).sort(([a], [b]) => b.localeCompare(a)),
+    Object.entries(activeEmotes)
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([date, emotes]) => [
+        date,
+        emotes.sort((a, b) => a.name.localeCompare(b.name)),
+      ]),
   );
 
   const sortedRemovedEmotes = Object.fromEntries(
-    Object.entries(removedEmotes).sort(([a], [b]) => b.localeCompare(a)),
+    Object.entries(removedEmotes)
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([date, emotes]) => [
+        date,
+        emotes.sort((a, b) => a.name.localeCompare(b.name)),
+      ]),
   );
 
   return {
