@@ -77,5 +77,10 @@ export const getChannels = async (): Promise<Channel[]> => {
     displayName: c.displayName,
     imageUrl: c.imageUrl,
   }));
-  return [GLOBAL_CHANNEL, ...twitchChannels];
+
+  const sortedTwitchChannels = twitchChannels.toSorted((a, b) =>
+    a.displayName.localeCompare(b.displayName),
+  );
+
+  return [GLOBAL_CHANNEL, ...sortedTwitchChannels];
 };
