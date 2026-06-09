@@ -4,6 +4,7 @@ import {
   type Channel,
   type TwitchChannel,
 } from '~/lib/api/channels';
+import { get } from '~/lib/fetch';
 
 export type { Channel } from '~/lib/api/channels';
 
@@ -47,24 +48,15 @@ export interface RemovedEmoteEntry extends EmoteListEntry {
   removedAt: string;
 }
 
-const fetchEmotes = async <T>(url: string, fn: string): Promise<T> => {
-  const res = await fetch(url, { headers: { 'x-api-key': apiKey } });
-
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(
-      `${fn} ${url} failed: ${res.status} ${res.statusText} — ${body}`
-    );
-  }
-
-  return res.json();
-};
-
 export const getActiveEmotes = (channel: string): Promise<ActiveEmote[]> =>
-  fetchEmotes(`${apiUrl}/v1/emotes/${channel}`, 'getActiveEmotes');
+  get(`${apiUrl}/v1/emotes/${channel}`, {
+    headers: { 'x-api-key': apiKey },
+  });
 
 export const getRemovedEmotes = (channel: string): Promise<RemovedEmote[]> =>
-  fetchEmotes(`${apiUrl}/v1/emotes/${channel}/removed`, 'getRemovedEmotes');
+  get(`${apiUrl}/v1/emotes/${channel}/removed`, {
+    headers: { 'x-api-key': apiKey },
+  });
 
 interface ChannelDto {
   id: string;
@@ -74,10 +66,9 @@ interface ChannelDto {
 }
 
 export const getChannels = async (): Promise<Channel[]> => {
-  const channels = await fetchEmotes<ChannelDto[]>(
-    `${apiUrl}/v1/channels`,
-    'getChannels'
-  );
+  const channels = await get<ChannelDto[]>(`${apiUrl}/v1/channels`, {
+    headers: { 'x-api-key': apiKey },
+  });
 
   const twitchChannels: TwitchChannel[] = channels.map((c) => ({
     type: 'twitch',
