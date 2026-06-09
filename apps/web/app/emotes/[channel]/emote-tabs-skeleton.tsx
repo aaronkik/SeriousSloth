@@ -7,7 +7,6 @@ const EmoteTabsSkeleton = () => (
       {Array.from({ length: 12 }).map((_, index) => (
         <li key={index} className='flex flex-col items-center gap-2'>
           <Skeleton className='size-36 rounded-xl' />
-          <Skeleton className='h-4 w-20' />
         </li>
       ))}
     </ul>
