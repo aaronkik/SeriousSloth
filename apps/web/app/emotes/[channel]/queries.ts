@@ -63,19 +63,12 @@ export const getEmoteData = async (
         .toISOString()
         .split('T')[0];
 
-      const emote = {
+      (prev[emoteAddedAtDate] ??= []).push({
         id: curr.emote.id,
         name: curr.emote.name,
         emoteUrl: buildEmoteUrl(curr.emote),
         addedAt: curr.addedAt,
-      };
-
-      const emoteActiveDateCollection = prev[emoteAddedAtDate];
-      if (!emoteActiveDateCollection) {
-        prev[emoteAddedAtDate] = [emote];
-      } else {
-        prev[emoteAddedAtDate].push(emote);
-      }
+      });
 
       return prev;
     },
@@ -88,19 +81,12 @@ export const getEmoteData = async (
         .toISOString()
         .split('T')[0];
 
-      const emote = {
+      (prev[emoteRemovedDate] ??= []).push({
         id: curr.emote.id,
         name: curr.emote.name,
         emoteUrl: buildEmoteUrl(curr.emote),
         removedAt: curr.removedAt,
-      };
-
-      const emoteRemovedDateCollection = prev[emoteRemovedDate];
-      if (!emoteRemovedDateCollection) {
-        prev[emoteRemovedDate] = [emote];
-      } else {
-        prev[emoteRemovedDate].push(emote);
-      }
+      });
 
       return prev;
     },
