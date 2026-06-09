@@ -32,7 +32,6 @@ export const getEmoteData = async (
   activeEmotesCount: number;
   removedEmotes: Record<string, RemovedEmoteEntry[]>;
   removedEmotesCount: number;
-  updatedAt: number;
 }> => {
   'use cache';
   cacheLife({ stale: 300, revalidate: 300, expire: 300 });
@@ -121,6 +120,5 @@ export const getEmoteData = async (
     activeEmotesCount,
     removedEmotes: sortedRemovedEmotes,
     removedEmotesCount,
-    updatedAt: Date.now(),
   };
 };

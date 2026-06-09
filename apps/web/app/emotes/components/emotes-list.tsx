@@ -4,10 +4,7 @@ import type {
   ActiveEmoteEntry,
   RemovedEmoteEntry,
 } from '~/lib/api/emotes-service';
-import localizedFormat from 'dayjs/plugin/localizedFormat';
-import dayjs from 'dayjs';
-
-dayjs.extend(localizedFormat);
+import { formatDate } from '~/lib/helpers';
 
 type Props = {
   count: number;
@@ -35,19 +32,19 @@ const EmotesList = ({
   return (
     <div className='flex flex-col flex-wrap justify-center py-6'>
       {Object.entries(emotes).map(
-        ([groupingDate, emotes]: [
+        ([groupingDate, groupEmotes]: [
           string,
           (ActiveEmoteEntry | RemovedEmoteEntry)[],
         ]) => (
           <div key={groupingDate} className='flex flex-col'>
             <div className='py-6 flex items-center gap-2'>
               <p className='text-lg font-semibold'>
-                {dayjs(groupingDate).format('LL')}
+                {formatDate(groupingDate, 'LL')}
               </p>
               <hr className='w-48 h-1 bg-primary rounded-full' />
             </div>
             <ul className='flex flex-row flex-wrap justify-start gap-4'>
-              {emotes.map((emote) => (
+              {groupEmotes.map((emote) => (
                 <li key={emote.id}>
                   <Card
                     size='sm'
