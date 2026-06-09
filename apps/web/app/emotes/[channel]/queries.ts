@@ -2,10 +2,10 @@ import { cacheLife } from 'next/cache';
 import { channelSlug } from '~/lib/api/channels';
 import {
   type ActiveEmoteEntry,
+  type RemovedEmoteEntry,
   getActiveEmotes,
   getChannels,
   getRemovedEmotes,
-  type RemovedEmoteEntry,
 } from '~/lib/api/emotes-service';
 import { buildEmoteUrl } from '~/lib/helpers';
 import { setAttributes, trace } from '~/observability';
@@ -25,7 +25,14 @@ export const getChannel = async (channelParam: string) => {
   return channels.find((c) => channelSlug(c) === channelParam) ?? null;
 };
 
-export const getEmoteData = async (channelParam: string) => {
+export const getEmoteData = async (
+  channelParam: string,
+): Promise<{
+  activeEmotes: Record<string, ActiveEmoteEntry[]>;
+  activeEmotesCount: number;
+  removedEmotes: Record<string, RemovedEmoteEntry[]>;
+  removedEmotesCount: number;
+}> => {
   'use cache';
   cacheLife({ stale: 300, revalidate: 300, expire: 300 });
 
@@ -42,28 +49,72 @@ export const getEmoteData = async (channelParam: string) => {
     }),
   ]);
 
+  const activeEmotesCount = rawActiveEmotes.length;
+  const removedEmotesCount = rawRemovedEmotes.length;
+
   setAttributes({
-    'emotes.count.active': rawActiveEmotes.length,
-    'emotes.count.remote': rawRemovedEmotes.length,
+    'emotes.count.active': activeEmotesCount,
+    'emotes.count.remote': removedEmotesCount,
   });
 
-  const activeEmotes: ActiveEmoteEntry[] = rawActiveEmotes.map(
-    ({ emote, addedAt }) => ({
-      id: emote.id,
-      name: emote.name,
-      emoteUrl: buildEmoteUrl(emote),
-      addedAt,
-    }),
+  const activeEmotes = rawActiveEmotes.reduce(
+    (prev, curr) => {
+      const emoteAddedAtDate = new Date(curr.addedAt)
+        .toISOString()
+        .split('T')[0];
+
+      (prev[emoteAddedAtDate] ??= []).push({
+        id: curr.emote.id,
+        name: curr.emote.name,
+        emoteUrl: buildEmoteUrl(curr.emote),
+        addedAt: curr.addedAt,
+      });
+
+      return prev;
+    },
+    {} as Record<string, ActiveEmoteEntry[]>,
   );
 
-  const removedEmotes: RemovedEmoteEntry[] = rawRemovedEmotes.map(
-    ({ emote, removedAt }) => ({
-      id: emote.id,
-      name: emote.name,
-      emoteUrl: buildEmoteUrl(emote),
-      removedAt,
-    }),
+  const removedEmotes = rawRemovedEmotes.reduce(
+    (prev, curr) => {
+      const emoteRemovedDate = new Date(curr.removedAt)
+        .toISOString()
+        .split('T')[0];
+
+      (prev[emoteRemovedDate] ??= []).push({
+        id: curr.emote.id,
+        name: curr.emote.name,
+        emoteUrl: buildEmoteUrl(curr.emote),
+        removedAt: curr.removedAt,
+      });
+
+      return prev;
+    },
+    {} as Record<string, RemovedEmoteEntry[]>,
   );
 
-  return { activeEmotes, removedEmotes, updatedAt: Date.now() };
+  const sortedActiveEmotes = Object.fromEntries(
+    Object.entries(activeEmotes)
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([date, emotes]) => [
+        date,
+        emotes.sort((a, b) => a.name.localeCompare(b.name)),
+      ]),
+  );
+
+  const sortedRemovedEmotes = Object.fromEntries(
+    Object.entries(removedEmotes)
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([date, emotes]) => [
+        date,
+        emotes.sort((a, b) => a.name.localeCompare(b.name)),
+      ]),
+  );
+
+  return {
+    activeEmotes: sortedActiveEmotes,
+    activeEmotesCount,
+    removedEmotes: sortedRemovedEmotes,
+    removedEmotesCount,
+  };
 };

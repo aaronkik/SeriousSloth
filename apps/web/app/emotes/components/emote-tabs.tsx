@@ -12,16 +12,43 @@ import EmotesList from './emotes-list';
 type Tab = 'active' | 'removed';
 
 type Props = {
-  activeEmotes: ActiveEmoteEntry[];
-  removedEmotes: RemovedEmoteEntry[];
+  activeEmotes: Record<string, ActiveEmoteEntry[]>;
+  activeEmotesCount: number;
+  removedEmotes: Record<string, RemovedEmoteEntry[]>;
+  removedEmotesCount: number;
 };
 
-const EmoteTabs = ({ activeEmotes, removedEmotes }: Props) => {
+const EmoteTabs = ({
+  activeEmotes,
+  activeEmotesCount,
+  removedEmotes,
+  removedEmotesCount,
+}: Props) => {
   const [tab, setTab] = useState<Tab>('active');
 
-  const tabs: Array<{ id: Tab; label: string; count: number; emotes: (ActiveEmoteEntry | RemovedEmoteEntry)[]; emptyMessage: string }> = [
-    { id: 'active', label: 'Active', count: activeEmotes.length, emotes: activeEmotes, emptyMessage: 'No active emotes' },
-    { id: 'removed', label: 'Removed', count: removedEmotes.length, emotes: removedEmotes, emptyMessage: 'No removed emotes' },
+  const tabs: Array<{
+    id: Tab;
+    label: string;
+    count: number;
+    emotes:
+      | Record<string, ActiveEmoteEntry[]>
+      | Record<string, RemovedEmoteEntry[]>;
+    emptyMessage: string;
+  }> = [
+    {
+      id: 'active',
+      label: 'Active',
+      count: activeEmotesCount,
+      emotes: activeEmotes,
+      emptyMessage: 'No active emotes',
+    },
+    {
+      id: 'removed',
+      label: 'Removed',
+      count: removedEmotesCount,
+      emotes: removedEmotes,
+      emptyMessage: 'No removed emotes',
+    },
   ];
 
   return (
@@ -41,9 +68,13 @@ const EmoteTabs = ({ activeEmotes, removedEmotes }: Props) => {
           </TabsTrigger>
         ))}
       </TabsList>
-      {tabs.map(({ id, emotes, emptyMessage }) => (
+      {tabs.map(({ id, count, emotes, emptyMessage }) => (
         <TabsContent key={id} value={id}>
-          <EmotesList emotes={emotes} emptyMessage={emptyMessage} />
+          <EmotesList
+            count={count}
+            emotes={emotes}
+            emptyMessage={emptyMessage}
+          />
         </TabsContent>
       ))}
     </Tabs>
