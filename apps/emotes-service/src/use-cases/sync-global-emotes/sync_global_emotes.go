@@ -4,7 +4,7 @@ import (
 	"context"
 	"emotes-service/src/adapters/secondary/event_store"
 	"emotes-service/src/adapters/secondary/twitch"
-	"emotes-service/src/ids"
+	"emotes-service/src/id"
 	"fmt"
 	"sort"
 	"time"
@@ -117,7 +117,7 @@ func createEmoteEvent(in createEmoteEventInput) event_store.EmoteServiceEvent {
 		Emote:       in.Emote,
 		EmoteId:     in.EmoteId,
 		EventName:   in.EventName,
-		Id:          ids.New("es_"),
+		Id:          id.New("es"),
 		Kind:        "EVENT",
 		Sequence:    in.Sequence,
 	}
