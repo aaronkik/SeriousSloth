@@ -4,26 +4,14 @@ import (
 	"context"
 	"emotes-service/src/environment"
 	"encoding/json"
-	"log"
 	"log/slog"
 	"net/http"
 	"net/url"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/newrelic/go-agent/v3/newrelic"
 )
-
-var ssmClient *ssm.Client
-
-func init() {
-	cfg, err := config.LoadDefaultConfig(context.TODO())
-	if err != nil {
-		log.Fatal(err)
-	}
-	ssmClient = ssm.NewFromConfig(cfg)
-}
 
 // GetSecret gets a secret from SSM
 // It calls SSM via local host instead of using the SSM client in conjunction with the SSM Lambda Layer.
