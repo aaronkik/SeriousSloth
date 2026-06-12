@@ -4,7 +4,7 @@ import (
 	"context"
 	"emotes-service/src/adapters/secondary/channels_store"
 	"emotes-service/src/adapters/secondary/twitch"
-	"emotes-service/src/ids"
+	"emotes-service/src/id"
 	"errors"
 	"log/slog"
 	"strings"
@@ -56,7 +56,7 @@ func AddChannel(ctx context.Context, input Input) (Channel, error) {
 	item := channels_store.ChannelItem{
 		PK:          channels_store.ChannelsPartitionKey,
 		SK:          twitchId,
-		Id:          ids.New("chnl_"),
+		Id:          id.New("chnl"),
 		TwitchId:    twitchId,
 		DisplayName: user.DisplayName,
 		ImageUrl:    user.ProfileImageURL,

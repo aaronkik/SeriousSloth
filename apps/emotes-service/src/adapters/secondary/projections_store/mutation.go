@@ -4,7 +4,7 @@ import (
 	"context"
 	"emotes-service/src/adapters/secondary/event_store"
 	"emotes-service/src/environment"
-	"emotes-service/src/ids"
+	"emotes-service/src/id"
 	"errors"
 	"fmt"
 	"log"
@@ -92,7 +92,7 @@ func buildProjectionUpdate(ctx context.Context, emoteEvent event_store.EmoteServ
 			},
 			ExpressionAttributeValues: map[string]types.AttributeValue{
 				":active":  &types.AttributeValueMemberS{Value: "ACTIVE"},
-				":id":      &types.AttributeValueMemberS{Value: ids.New("es_prj_")},
+				":id":      &types.AttributeValueMemberS{Value: id.New("es_prj")},
 				":emoteId": &types.AttributeValueMemberS{Value: emoteEvent.EmoteId},
 				":emote":   emoteAttr,
 				":null":    &types.AttributeValueMemberNULL{Value: true},
