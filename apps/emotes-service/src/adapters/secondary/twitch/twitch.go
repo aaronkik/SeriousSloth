@@ -14,20 +14,29 @@ import (
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
+	"golang.org/x/sync/errgroup"
 )
 
 func GetAccessToken(ctx context.Context) (string, error) {
-	twitchClientId, err := parameter.GetSecret(ctx, environment.GetOrFatal("TWITCH_CLIENT_ID_PARAM_ARN"))
-	if err != nil {
-		slog.Error("Error getting client id", "error", err)
-		return "", err
-	}
+	var twitchClientId, twitchClientSecret string
 
-	twitchClientSecret, err := parameter.GetSecret(ctx, environment.GetOrFatal("TWITCH_CLIENT_SECRET_PARAM_ARN"))
-	if err != nil {
-		slog.Error("Error getting client secret", "error", err)
-		return "", err
-	}
+	g, ctx := errgroup.WithContext(ctx)
+
+	g.Go(func() (err error) {
+		twitchClientId, err = parameter.GetSecret(ctx, environment.GetOrFatal("TWITCH_CLIENT_ID_PARAM_ARN"))
+		if err != nil {
+			slog.ErrorContext(ctx, "Error getting client id", "error", err)
+		}
+		return err
+	})
+
+	g.Go(func() (err error) {
+		twitchClientSecret, err = parameter.GetSecret(ctx, environment.GetOrFatal("TWITCH_CLIENT_SECRET_PARAM_ARN"))
+		if err != nil {
+			slog.ErrorContext(ctx, "Error getting client secret", "error", err)
+		}
+		return err
+	})
 
 	oauth2Config := &clientcredentials.Config{
 		ClientID:     twitchClientId,
