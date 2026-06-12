@@ -19,6 +19,7 @@ type LambdaArgs struct {
 	ReservedConcurrentExecutions pulumi.IntPtrInput
 	Environment                  pulumi.StringMap
 	PolicyStatements             iam.GetPolicyDocumentStatementArray
+	Layers                       pulumi.StringArray
 }
 
 type Lambda struct {
@@ -159,6 +160,11 @@ func NewLambda(ctx *pulumi.Context, name string, args *LambdaArgs, opts ...pulum
 		envVars[k] = v
 	}
 
+	baseLayers := pulumi.StringArray{
+		pulumi.String("arn:aws:lambda:eu-west-1:451483290750:layer:NewRelicLambdaExtensionARM64:54"),
+	}
+	layers := append(baseLayers, args.Layers...)
+
 	function, err := lambda.NewFunction(ctx, name, &lambda.FunctionArgs{
 		Role:                         lambdaRole.Arn,
 		Runtime:                      pulumi.String("provided.al2023"),
@@ -174,9 +180,7 @@ func NewLambda(ctx *pulumi.Context, name string, args *LambdaArgs, opts ...pulum
 		Architectures: pulumi.StringArray{
 			pulumi.String("arm64"),
 		},
-		Layers: pulumi.StringArray{
-			pulumi.String("arn:aws:lambda:eu-west-1:451483290750:layer:NewRelicLambdaExtensionARM64:54"),
-		},
+		Layers: layers,
 		LoggingConfig: &lambda.FunctionLoggingConfigArgs{
 			ApplicationLogLevel: pulumi.String(logLevel),
 			LogFormat:           pulumi.String("JSON"),

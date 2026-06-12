@@ -57,6 +57,8 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 	twitchClientId := appConfig.RequireSecret("twitch-client-id")
 	twitchClientSecret := appConfig.RequireSecret("twitch-client-secret")
 
+	awsParameterSecretLambdaExtension := pulumi.String("arn:aws:lambda:eu-west-1:015030872274:layer:AWS-Parameters-and-Secrets-Lambda-Extension-Arm64:89")
+
 	twitchClientIdParam, err := ssm.NewParameter(ctx, "twitch-client-id", &ssm.ParameterArgs{
 		Type:  pulumi.String(ssm.ParameterTypeSecureString),
 		Value: pulumi.StringInput(twitchClientId),
@@ -90,10 +92,14 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 			"TWITCH_CLIENT_ID_PARAM_ARN":      pulumi.StringInput(twitchClientIdParam.Arn),
 			"TWITCH_CLIENT_SECRET_PARAM_ARN":  pulumi.StringInput(twitchClientSecretParam.Arn),
 		},
+		Layers: pulumi.StringArray{awsParameterSecretLambdaExtension},
 		PolicyStatements: iam.GetPolicyDocumentStatementArray{
 			&iam.GetPolicyDocumentStatementArgs{
-				Effect:  pulumi.String("Allow"),
-				Actions: pulumi.StringArray{pulumi.String("ssm:GetParameter")},
+				Effect: pulumi.String("Allow"),
+				Actions: pulumi.StringArray{
+					pulumi.String("kms:Decrypt"),
+					pulumi.String("ssm:GetParameter"),
+				},
 				Resources: pulumi.StringArray{
 					twitchClientIdParam.Arn,
 					twitchClientSecretParam.Arn,
@@ -380,6 +386,7 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 			"TWITCH_CLIENT_ID_PARAM_ARN":     pulumi.StringInput(twitchClientIdParam.Arn),
 			"TWITCH_CLIENT_SECRET_PARAM_ARN": pulumi.StringInput(twitchClientSecretParam.Arn),
 		},
+		Layers: pulumi.StringArray{awsParameterSecretLambdaExtension},
 		PolicyStatements: iam.GetPolicyDocumentStatementArray{
 			&iam.GetPolicyDocumentStatementArgs{
 				Effect:    pulumi.String("Allow"),
@@ -387,8 +394,11 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 				Resources: pulumi.StringArray{statefulResource.TwitchChannelsTable.Arn},
 			},
 			&iam.GetPolicyDocumentStatementArgs{
-				Effect:  pulumi.String("Allow"),
-				Actions: pulumi.StringArray{pulumi.String("ssm:GetParameter")},
+				Effect: pulumi.String("Allow"),
+				Actions: pulumi.StringArray{
+					pulumi.String("kms:Decrypt"),
+					pulumi.String("ssm:GetParameter"),
+				},
 				Resources: pulumi.StringArray{
 					twitchClientIdParam.Arn,
 					twitchClientSecretParam.Arn,
@@ -445,10 +455,14 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 			"TWITCH_CLIENT_ID_PARAM_ARN":      pulumi.StringInput(twitchClientIdParam.Arn),
 			"TWITCH_CLIENT_SECRET_PARAM_ARN":  pulumi.StringInput(twitchClientSecretParam.Arn),
 		},
+		Layers: pulumi.StringArray{awsParameterSecretLambdaExtension},
 		PolicyStatements: iam.GetPolicyDocumentStatementArray{
 			&iam.GetPolicyDocumentStatementArgs{
-				Effect:  pulumi.String("Allow"),
-				Actions: pulumi.StringArray{pulumi.String("ssm:GetParameter")},
+				Effect: pulumi.String("Allow"),
+				Actions: pulumi.StringArray{
+					pulumi.String("kms:Decrypt"),
+					pulumi.String("ssm:GetParameter"),
+				},
 				Resources: pulumi.StringArray{
 					twitchClientIdParam.Arn,
 					twitchClientSecretParam.Arn,
