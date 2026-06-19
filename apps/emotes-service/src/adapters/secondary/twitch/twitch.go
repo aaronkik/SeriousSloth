@@ -38,6 +38,10 @@ func GetAccessToken(ctx context.Context) (string, error) {
 		return err
 	})
 
+	if err := g.Wait(); err != nil {
+		return "", err
+	}
+
 	oauth2Config := &clientcredentials.Config{
 		ClientID:     twitchClientId,
 		ClientSecret: twitchClientSecret,

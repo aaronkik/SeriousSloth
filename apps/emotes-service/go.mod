@@ -10,6 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/apigateway v1.39.3
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.57.2
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.90.0
+	github.com/aws/aws-sdk-go-v2/service/sqs v1.42.27
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.68.5
 	github.com/newrelic/go-agent/v3 v3.43.3
 	github.com/newrelic/go-agent/v3/integrations/nrlambda v1.2.6
@@ -18,6 +19,7 @@ require (
 	github.com/pulumi/pulumi/sdk/v3 v3.232.0
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/oauth2 v0.36.0
+	golang.org/x/sync v0.20.0
 )
 
 require (
@@ -39,7 +41,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.11.22 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.22 // indirect
 	github.com/aws/aws-sdk-go-v2/service/signin v1.0.10 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sqs v1.42.27 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.30.16 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.20 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.42.0 // indirect
@@ -133,7 +134,6 @@ require (
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/mod v0.34.0 // indirect
 	golang.org/x/net v0.53.0 // indirect
-	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/sys v0.43.0 // indirect
 	golang.org/x/term v0.42.0 // indirect
 	golang.org/x/text v0.36.0 // indirect
