@@ -52,9 +52,11 @@ func GetAccessToken(ctx context.Context) (string, error) {
 		Timeout:   time.Second * 10,
 		Transport: newrelic.NewRoundTripper(nil),
 	})
+
 	token, err := oauth2Config.Token(tokenCtx)
+
 	if err != nil {
-		slog.Error("Error getting access token", "error", err)
+		slog.ErrorContext(ctx, "Error getting access token", "error", err)
 		return "", err
 	}
 
