@@ -20,20 +20,20 @@ import (
 func GetAccessToken(ctx context.Context) (string, error) {
 	var twitchClientId, twitchClientSecret string
 
-	g, ctx := errgroup.WithContext(ctx)
+	g, gCtx := errgroup.WithContext(ctx)
 
 	g.Go(func() (err error) {
-		twitchClientId, err = parameter.GetSecret(ctx, environment.GetOrFatal("TWITCH_CLIENT_ID_PARAM_ARN"))
+		twitchClientId, err = parameter.GetSecret(gCtx, environment.GetOrFatal("TWITCH_CLIENT_ID_PARAM_ARN"))
 		if err != nil {
-			slog.ErrorContext(ctx, "Error getting client id", "error", err)
+			slog.ErrorContext(gCtx, "Error getting client id", "error", err)
 		}
 		return err
 	})
 
 	g.Go(func() (err error) {
-		twitchClientSecret, err = parameter.GetSecret(ctx, environment.GetOrFatal("TWITCH_CLIENT_SECRET_PARAM_ARN"))
+		twitchClientSecret, err = parameter.GetSecret(gCtx, environment.GetOrFatal("TWITCH_CLIENT_SECRET_PARAM_ARN"))
 		if err != nil {
-			slog.ErrorContext(ctx, "Error getting client secret", "error", err)
+			slog.ErrorContext(gCtx, "Error getting client secret", "error", err)
 		}
 		return err
 	})
