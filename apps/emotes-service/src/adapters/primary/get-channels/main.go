@@ -44,7 +44,10 @@ func main() {
 		),
 	)
 	slog.SetDefault(logger)
-	app, err := newrelic.NewApplication(newrelic.ConfigFromEnvironment())
+	app, err := newrelic.NewApplication(
+		nrlambda.ConfigOption(),
+		newrelic.ConfigFromEnvironment(),
+	)
 	if nil != err {
 		slog.Error("error creating app (invalid config)", "error", err)
 	}
