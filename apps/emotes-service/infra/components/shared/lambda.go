@@ -147,7 +147,7 @@ func NewLambda(ctx *pulumi.Context, name string, args *LambdaArgs, opts ...pulum
 		"NEW_RELIC_ACCOUNT_ID":                     pulumi.StringInput(newRelicAccountId),
 		"NEW_RELIC_APM_LAMBDA_MODE":                pulumi.String(newRelicEnabled),
 		"NEW_RELIC_DISTRIBUTED_TRACING_ENABLED":    pulumi.String(newRelicEnabled),
-		"NEW_RELIC_APP_NAME":                       pulumi.String(ctx.Project()),
+		"NEW_RELIC_APP_NAME":                       pulumi.String(ctx.Project() + "-" + ctx.Stack()),
 		"NEW_RELIC_CLOUD_AWS_ACCOUNT_ID":           pulumi.String(awsAccountId),
 		"NEW_RELIC_LICENSE_KEY_SSM_PARAMETER_NAME": pulumi.StringInput(newRelicLambdaLicenseKeySSMParameterArn),
 		"NEW_RELIC_LOG_LEVEL":                      pulumi.String(logLevel),
