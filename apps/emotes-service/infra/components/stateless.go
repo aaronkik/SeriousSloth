@@ -214,7 +214,7 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 		FlexibleTimeWindow: &scheduler.ScheduleFlexibleTimeWindowArgs{
 			Mode: pulumi.String("OFF"),
 		},
-		ScheduleExpression:         pulumi.String("cron(0 * * * ? *)"),
+		ScheduleExpression:         pulumi.String(stack.EmoteSyncSchedule(ctx.Stack())),
 		ScheduleExpressionTimezone: pulumi.String("UTC"),
 		State:                      pulumi.String(schedulerState),
 		Target: &scheduler.ScheduleTargetArgs{
@@ -608,7 +608,7 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 		FlexibleTimeWindow: &scheduler.ScheduleFlexibleTimeWindowArgs{
 			Mode: pulumi.String("OFF"),
 		},
-		ScheduleExpression:         pulumi.String("cron(0 * * * ? *)"),
+		ScheduleExpression:         pulumi.String(stack.EmoteSyncSchedule(ctx.Stack())),
 		ScheduleExpressionTimezone: pulumi.String("UTC"),
 		State:                      pulumi.String(schedulerState),
 		Target: &scheduler.ScheduleTargetArgs{
