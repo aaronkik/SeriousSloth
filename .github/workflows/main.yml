@@ -21,7 +21,7 @@ env:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: codebuild-SeriousSloth-${{ github.run_id }}-${{ github.run_attempt }}
     timeout-minutes: 15
     steps:
       - name: Checkout
