@@ -356,6 +356,25 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 		return nil, err
 	}
 
+	getAddedEmotesLambda, err := components.NewLambda(ctx, "get-added-emotes", &components.LambdaArgs{
+		Code: pulumi.NewAssetArchive(map[string]any{
+			"bootstrap": pulumi.NewFileAsset("../dist/get-added-emotes/bootstrap"),
+		}),
+		Environment: pulumi.StringMap{
+			"TWITCH_EMOTES_EVENT_STORE_TABLE": pulumi.StringInput(statefulResource.TwitchEmotesEventsStoreTable.Name),
+		},
+		PolicyStatements: iam.GetPolicyDocumentStatementArray{
+			&iam.GetPolicyDocumentStatementArgs{
+				Effect:    pulumi.String("Allow"),
+				Actions:   pulumi.StringArray{pulumi.String("dynamodb:Query")},
+				Resources: pulumi.StringArray{statefulResource.TwitchEmotesEventsStoreTable.Arn},
+			},
+		},
+	}, pulumi.Parent(component), providerResource)
+	if err != nil {
+		return nil, err
+	}
+
 	getChannelsLambda, err := components.NewLambda(ctx, "get-channels", &components.LambdaArgs{
 		Code: pulumi.NewAssetArchive(map[string]any{
 			"bootstrap": pulumi.NewFileAsset("../dist/get-channels/bootstrap"),
@@ -642,6 +661,12 @@ func NewStatelessComponent(ctx *pulumi.Context, providerResource pulumi.Resource
 			permissionName:    "emotes-api-invoke-get-removed-emotes",
 			function:          getRemovedEmotesLambda.Function,
 			sourcePathPattern: "*/GET/emotes/*/removed",
+		},
+		{
+			placeholder:       "__GET_ADDED_EMOTES_FUNCTION_NAME__",
+			permissionName:    "emotes-api-invoke-get-added-emotes",
+			function:          getAddedEmotesLambda.Function,
+			sourcePathPattern: "*/GET/emotes/*/added",
 		},
 		{
 			placeholder:       "__GET_CHANNELS_FUNCTION_NAME__",

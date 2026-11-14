@@ -72,19 +72,48 @@ type EmoteServiceEvent struct {
 	Sequence    int                     `dynamodbav:"sequence"`
 }
 
-func LoadEvents(ctx context.Context, aggregateId string) ([]EmoteServiceEvent, error) {
-	txn := newrelic.FromContext(ctx)
-	tableName := environment.GetOrFatal("TWITCH_EMOTES_EVENT_STORE_TABLE")
+const eventsKeyCondition = "PK = :pk AND begins_with(SK, :sk)"
+const eventsSortKeyPrefix = "SEQUENCE#"
 
-	paginator := dynamodb.NewQueryPaginator(client, &dynamodb.QueryInput{
-		TableName:              aws.String(tableName),
-		KeyConditionExpression: aws.String("PK = :pk AND begins_with(SK, :sk)"),
+func LoadEvents(ctx context.Context, aggregateId string) ([]EmoteServiceEvent, error) {
+	return queryEvents(ctx, aggregateId, &dynamodb.QueryInput{
+		KeyConditionExpression: aws.String(eventsKeyCondition),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
 			":pk": &types.AttributeValueMemberS{Value: aggregateId},
-			":sk": &types.AttributeValueMemberS{Value: "SEQUENCE#"},
+			":sk": &types.AttributeValueMemberS{Value: eventsSortKeyPrefix},
 		},
 		ConsistentRead: aws.Bool(true),
+	}, map[string]any{
+		":pk": aggregateId,
+		":sk": eventsSortKeyPrefix,
 	})
+}
+
+func LoadEmoteAddedEvents(ctx context.Context, aggregateId string) ([]EmoteServiceEvent, error) {
+	return queryEvents(ctx, aggregateId, &dynamodb.QueryInput{
+		KeyConditionExpression: aws.String(eventsKeyCondition),
+		FilterExpression:       aws.String("#eventName = :eventName"),
+		ExpressionAttributeNames: map[string]string{
+			"#eventName": "eventName",
+		},
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":pk":        &types.AttributeValueMemberS{Value: aggregateId},
+			":sk":        &types.AttributeValueMemberS{Value: eventsSortKeyPrefix},
+			":eventName": &types.AttributeValueMemberS{Value: "EmoteAdded"},
+		},
+	}, map[string]any{
+		":pk":        aggregateId,
+		":sk":        eventsSortKeyPrefix,
+		":eventName": "EmoteAdded",
+	})
+}
+
+func queryEvents(ctx context.Context, aggregateId string, input *dynamodb.QueryInput, queryParameters map[string]any) ([]EmoteServiceEvent, error) {
+	txn := newrelic.FromContext(ctx)
+	tableName := environment.GetOrFatal("TWITCH_EMOTES_EVENT_STORE_TABLE")
+	input.TableName = aws.String(tableName)
+
+	paginator := dynamodb.NewQueryPaginator(client, input)
 
 	var items []EmoteServiceEvent
 	for paginator.HasMorePages() {
@@ -93,22 +122,19 @@ func LoadEvents(ctx context.Context, aggregateId string) ([]EmoteServiceEvent, e
 			Product:            newrelic.DatastoreDynamoDB,
 			Collection:         tableName,
 			Operation:          "Query",
-			ParameterizedQuery: "PK = :pk AND begins_with(SK, :sk)",
-			QueryParameters: map[string]any{
-				":pk": aggregateId,
-				":sk": "SEQUENCE#",
-			},
+			ParameterizedQuery: eventsKeyCondition,
+			QueryParameters:    queryParameters,
 		}
 		page, err := paginator.NextPage(ctx)
 		ddbSeg.End()
 		if err != nil {
-			slog.Error("Error querying", "aggregateId", aggregateId, "error", err)
+			slog.ErrorContext(ctx, "Error querying", "aggregateId", aggregateId, "error", err)
 			return nil, err
 		}
 
 		var pageItems []EmoteServiceEvent
 		if err := attributevalue.UnmarshalListOfMaps(page.Items, &pageItems); err != nil {
-			slog.Error("Error unmarshalling page", "aggregateId", aggregateId, "error", err)
+			slog.ErrorContext(ctx, "Error unmarshalling page", "aggregateId", aggregateId, "error", err)
 			return nil, err
 		}
 		items = append(items, pageItems...)
