@@ -29,6 +29,11 @@ export interface ActiveEmote {
   addedAt: string;
 }
 
+export interface AddedEmote {
+  emote: Emote;
+  addedAt: string;
+}
+
 export interface RemovedEmote {
   emote: Emote;
   removedAt: string;
@@ -40,16 +45,15 @@ export interface EmoteListEntry {
   emoteUrl: string;
 }
 
-export interface ActiveEmoteEntry extends EmoteListEntry {
-  addedAt: string;
-}
-
-export interface RemovedEmoteEntry extends EmoteListEntry {
-  removedAt: string;
-}
+export type EmotesByDate = Record<string, EmoteListEntry[]>;
 
 export const getActiveEmotes = (channel: string): Promise<ActiveEmote[]> =>
   get(`${apiUrl}/v1/emotes/${channel}`, {
+    headers: { 'x-api-key': apiKey },
+  });
+
+export const getAddedEmotes = (channel: string): Promise<AddedEmote[]> =>
+  get(`${apiUrl}/v1/emotes/${channel}/added`, {
     headers: { 'x-api-key': apiKey },
   });
 
