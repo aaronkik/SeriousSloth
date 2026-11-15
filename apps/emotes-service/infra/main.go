@@ -4,10 +4,8 @@ import (
 	"emotes-service/infra/components"
 	"emotes-service/infra/git"
 	"emotes-service/infra/stack"
-	"strings"
 
 	"github.com/pulumi/pulumi-aws/sdk/v7/go/aws"
-	"github.com/pulumi/pulumi-pulumiservice/sdk/go/pulumiservice"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 )
@@ -15,34 +13,6 @@ import (
 func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
 		gitRemoteUrl := git.Cli("remote", "get-url", "origin")
-		gitRepoSlug, err := git.GetRepositorySlug(gitRemoteUrl)
-		if err != nil {
-			return err
-		}
-
-		_, err = pulumiservice.NewDeploymentSettings(ctx, "deployment-settings-resource", &pulumiservice.DeploymentSettingsArgs{
-			Organization: pulumi.String(ctx.Organization()),
-			Project:      pulumi.String(ctx.Project()),
-			Stack:        pulumi.String(ctx.Stack()),
-			CacheOptions: &pulumiservice.DeploymentSettingsCacheOptionsArgs{
-				Enable: pulumi.Bool(true),
-			},
-			Vcs: &pulumiservice.DeploymentSettingsVcsArgs{
-				DeployCommits:       pulumi.Bool(true),
-				PreviewPullRequests: pulumi.Bool(true),
-				Provider:            pulumi.String("github"),
-				Repository:          pulumi.String(gitRepoSlug),
-			},
-			SourceContext: &pulumiservice.DeploymentSettingsSourceContextArgs{
-				Git: &pulumiservice.DeploymentSettingsGitSourceArgs{
-					Branch:  pulumi.String(git.Cli("branch", "--show")),
-					RepoDir: pulumi.String(strings.TrimSuffix(git.Cli("rev-parse", "--show-prefix"), "/")),
-				},
-			},
-		})
-		if err != nil {
-			return err
-		}
 
 		awsConfig := config.New(ctx, "aws")
 		awsRegion := awsConfig.Require("region")
