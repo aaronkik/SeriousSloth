@@ -1,3 +1,8 @@
+interface ErrorBody {
+  message?: string;
+  data?: Record<string, unknown>;
+}
+
 class HttpError<TCode extends number = number> extends Error {
   public readonly statusCode: TCode;
   public readonly url: string | undefined;
@@ -28,21 +33,16 @@ class HttpError<TCode extends number = number> extends Error {
   public static fromRequest(
     request: Request,
     response: Response,
-    parsedError: { data?: Record<string, unknown> },
+    errorBody: ErrorBody,
   ): HttpError {
     return new HttpError({
-      message: response.statusText,
+      message: errorBody.message ?? response.statusText,
       url: response.url,
       method: request.method,
       statusCode: response.status,
-      data: parsedError.data,
+      data: errorBody.data,
     });
   }
-}
-
-interface ErrorBody {
-  message?: string;
-  data?: Record<string, unknown>;
 }
 
 const http = async <T>(path: string, config: RequestInit): Promise<T> => {
@@ -50,12 +50,8 @@ const http = async <T>(path: string, config: RequestInit): Promise<T> => {
   const response = await fetch(request);
 
   if (!response.ok) {
-    const errJson = (await response.json()) as ErrorBody;
-    throw HttpError.fromRequest(
-      request,
-      { ...response, statusText: errJson.message ?? response.statusText },
-      errJson,
-    );
+    const errorBody = (await response.json()) as ErrorBody;
+    throw HttpError.fromRequest(request, response, errorBody);
   }
 
   return (await response.json()) as T;
