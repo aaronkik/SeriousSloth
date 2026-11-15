@@ -5,6 +5,10 @@ const nextConfig = {
   cacheComponents: true,
   poweredByHeader: false,
   serverExternalPackages: ['newrelic'],
+  // The agent requires newrelic.js via a runtime path, which file tracing cannot see.
+  outputFileTracingIncludes: {
+    '/*': ['./newrelic.js'],
+  },
   images: {
     remotePatterns: [
       {
