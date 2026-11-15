@@ -6,3 +6,7 @@ node = "26.13.1"
 "npm:@typespec/compiler" = "1.18.0"
 pulumi = "3.276.0"
 turbo = "2.11.11"
+
+[settings]
+lockfile = true
+lockfile_platforms = ["linux-x64", "macos-arm64"]
