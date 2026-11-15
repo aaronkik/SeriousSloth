@@ -4,10 +4,10 @@ const initMocks = async () => {
     server.listen();
   } else {
     const { worker } = await import('./msw-browser');
-    worker.start();
+    await worker.start();
   }
 };
 
-initMocks();
+void initMocks();
 
 export {};
