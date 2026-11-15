@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import type { Emote } from '~/lib/api/emotes-service';
 import { buildEmoteUrl } from './emote-url';
 
