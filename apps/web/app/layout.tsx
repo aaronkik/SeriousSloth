@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   description: 'A web app that interacts with the Twitch API',
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;

@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
+    "lint": "oxlint",
     "test": "NODE_OPTIONS='--experimental-vm-modules --disable-warning=ExperimentalWarning' jest",
     "test:ci": "NODE_OPTIONS='--experimental-vm-modules --disable-warning=ExperimentalWarning' jest --ci --colors"
   },
@@ -41,18 +41,15 @@
     "@types/node": "26.6.6",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "eslint": "10.14.0",
-    "eslint-config-next": "16.4.6",
-    "eslint-config-prettier": "10.1.8",
     "jest": "30.5.2",
     "jest-environment-jsdom": "30.5.2",
     "jest-fixed-jsdom": "0.0.11",
     "msw": "3.0.5",
+    "oxlint": "1.93.0",
+    "oxlint-tsgolint": "7.0.2007",
     "postcss": "8.5.32",
-    "prettier": "3.10.1",
-    "prettier-plugin-tailwindcss": "0.8.1",
     "tailwindcss": "4.3.5",
-    "typescript": "6.0.3"
+    "typescript": "7.0.2"
   },
   "engines": {
     "node": "26.x"

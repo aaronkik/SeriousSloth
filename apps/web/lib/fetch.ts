@@ -40,12 +40,17 @@ class HttpError<TCode extends number = number> extends Error {
   }
 }
 
+interface ErrorBody {
+  message?: string;
+  data?: Record<string, unknown>;
+}
+
 const http = async <T>(path: string, config: RequestInit): Promise<T> => {
   const request = new Request(path, config);
   const response = await fetch(request);
 
   if (!response.ok) {
-    const errJson = await response.json();
+    const errJson = (await response.json()) as ErrorBody;
     throw HttpError.fromRequest(
       request,
       { ...response, statusText: errJson.message ?? response.statusText },
@@ -53,7 +58,7 @@ const http = async <T>(path: string, config: RequestInit): Promise<T> => {
     );
   }
 
-  return await response.json();
+  return (await response.json()) as T;
 };
 
 export const get = async <T>(
