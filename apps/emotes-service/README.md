@@ -43,10 +43,10 @@ task destroy:local
 
 Configurations can be found from the following locations:
 
-| Source                                    | Layer                                            |
-|-------------------------------------------|--------------------------------------------------|
-| Pulumi.yaml                               | Project-level                                    |
-| emotes-service/local-dev                  | ESC environment Pulumi Cloud (local development) |
-| Dynamically via tasks in `Taskfile.yml`   | Stack-level                                      |
+| Source                                  | Layer                                            |
+| --------------------------------------- | ------------------------------------------------ |
+| Pulumi.yaml                             | Project-level                                    |
+| emotes-service/local-dev                | ESC environment Pulumi Cloud (local development) |
+| Dynamically via tasks in `Taskfile.yml` | Stack-level                                      |
 
 Stack-level config overrides ESC values. ESC values override project-level.

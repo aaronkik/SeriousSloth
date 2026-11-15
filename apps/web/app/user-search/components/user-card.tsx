@@ -11,7 +11,7 @@ type CardSectionProps = {
 
 const CardSection = ({ title, children }: CardSectionProps) => (
   <div className='flex flex-col'>
-    <p className='text-sm font-medium uppercase tracking-wider text-muted-foreground'>
+    <p className='text-sm font-medium tracking-wider text-muted-foreground uppercase'>
       {title}
     </p>
     {children}

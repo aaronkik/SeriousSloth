@@ -7,11 +7,11 @@ const Link = forwardRef<HTMLAnchorElement, ComponentPropsWithRef<'a'>>(
       {...props}
       className={cn(
         'inline-flex items-center text-foreground no-underline transition-all duration-150 hover:text-primary hover:underline hover:underline-offset-4',
-        className
+        className,
       )}
       ref={ref}
     />
-  )
+  ),
 );
 
 Link.displayName = 'Link';

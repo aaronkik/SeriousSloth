@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Heading, MutedText } from '~/components/shared';
-import SlothLogo from './sloth-logo';
 import { Navigation } from './navigation';
+import SlothLogo from './sloth-logo';
 
 export const metadata: Metadata = {
   title: 'SeriousSloth',

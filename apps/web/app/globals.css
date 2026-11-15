@@ -1,6 +1,6 @@
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -87,10 +87,18 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background font-sans text-foreground;
     background-image:
-      radial-gradient(ellipse 90% 55% at 50% 115%, oklch(0.55 0.22 310 / 0.45), transparent 60%),
-      radial-gradient(ellipse 45% 25% at 50% 108%, oklch(0.7 0.28 320 / 0.4), transparent 55%);
+      radial-gradient(
+        ellipse 90% 55% at 50% 115%,
+        oklch(0.55 0.22 310 / 0.45),
+        transparent 60%
+      ),
+      radial-gradient(
+        ellipse 45% 25% at 50% 108%,
+        oklch(0.7 0.28 320 / 0.4),
+        transparent 55%
+      );
     background-attachment: fixed;
   }
 }

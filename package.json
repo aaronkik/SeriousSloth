@@ -2,6 +2,10 @@
   "name": "serioussloth",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
@@ -18,9 +22,5 @@
   "engines": {
     "node": "26.x"
   },
-  "packageManager": "bun@1.4.4",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ]
+  "packageManager": "bun@1.4.4"
 }

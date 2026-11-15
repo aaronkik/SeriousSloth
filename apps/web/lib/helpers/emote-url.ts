@@ -8,10 +8,10 @@ const SCALE_PRECEDENCE = ['3.0', '2.0', '1.0'] as const;
 
 const pickByPrecedence = <T extends string>(
   availableValues: readonly string[],
-  orderedPrecedence: readonly T[]
+  orderedPrecedence: readonly T[],
 ): T => {
   const preferredValue = orderedPrecedence.find((value) =>
-    availableValues.includes(value)
+    availableValues.includes(value),
   );
 
   if (preferredValue) {
@@ -25,7 +25,7 @@ const pickByPrecedence = <T extends string>(
 export const buildEmoteUrl = (emote: Emote): string => {
   const selectedThemeMode = pickByPrecedence(
     emote.theme_mode,
-    THEME_MODE_PRECEDENCE
+    THEME_MODE_PRECEDENCE,
   );
   const selectedFormat = pickByPrecedence(emote.format, FORMAT_PRECEDENCE);
   const selectedScale = pickByPrecedence(emote.scale, SCALE_PRECEDENCE);
