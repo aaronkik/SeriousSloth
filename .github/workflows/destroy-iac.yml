@@ -42,5 +42,3 @@ jobs:
           scope: user:aaronkik
       - name: Destroy stack
         run: turbo run destroy:ci
-        env:
-          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
