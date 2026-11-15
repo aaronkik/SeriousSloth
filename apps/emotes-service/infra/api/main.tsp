@@ -29,6 +29,11 @@ model ActiveEmote {
   addedAt: utcDateTime
 }
 
+model AddedEmote {
+  emote: Emote,
+  addedAt: utcDateTime
+}
+
 model RemovedEmote {
   emote: Emote,
   removedAt: utcDateTime
@@ -84,6 +89,21 @@ interface Emotes {
     }
   )
   listRemoved(@path channelId: string): RemovedEmote[] | Error;
+
+  /** List every emote added event for a channelId, including emotes later removed */
+  @get
+  @route("{channelId}/added")
+  @extension(
+    "x-amazon-apigateway-integration",
+    #{
+      type: "aws_proxy",
+      httpMethod: "POST",
+      payloadFormatVersion: "1.0",
+      uri: "arn:\${AWS::Partition}:apigateway:\${AWS::Region}:lambda:path/2015-03-31/functions/arn:\${AWS::Partition}:lambda:\${AWS::Region}:\${AWS::AccountId}:function:__GET_ADDED_EMOTES_FUNCTION_NAME__/invocations",
+      passthroughBehavior: "when_no_match",
+    }
+  )
+  listAdded(@path channelId: string): AddedEmote[] | Error;
 }
 
 @route("/channels")

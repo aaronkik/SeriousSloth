@@ -61,6 +61,11 @@ type apiRemovedEmote struct {
 	RemovedAt string   `json:"removedAt"`
 }
 
+type apiAddedEmote struct {
+	Emote   apiEmote `json:"emote"`
+	AddedAt string   `json:"addedAt"`
+}
+
 func Test_Emote_Added_Event_Is_Added_To_Event_Store_When_Emote_Exists(t *testing.T) {
 	require := require.New(t)
 
@@ -391,6 +396,58 @@ func Test_Api_Returns_Removed_Emote_For_Lowercase_Global_Channel(t *testing.T) {
 	require.Equal("1", parsed[0].Emote.Id)
 }
 
+func Test_Api_Returns_Added_Emote_After_It_Has_Been_Removed(t *testing.T) {
+	require := require.New(t)
+
+	body, status, err := getAddedEmotes(ctx, apiInvokeUrl, apiKey, "GLOBAL")
+	require.NoError(err)
+	require.Equal(http.StatusOK, status)
+
+	var parsed []apiAddedEmote
+	require.NoError(json.Unmarshal(body, &parsed))
+	require.Len(parsed, 1)
+	require.Equal("1", parsed[0].Emote.Id)
+	require.Equal(":)", parsed[0].Emote.Name)
+
+	addedAt, err := time.Parse(time.RFC3339Nano, parsed[0].AddedAt)
+	require.NoError(err)
+	require.True(testStartTime.Before(addedAt))
+}
+
+func Test_Api_Returns_Each_Added_Event_When_Emote_Is_Re_Added(t *testing.T) {
+	require := require.New(t)
+
+	updateGlobalEmotesResponse(t, ctx, ddbClient, mockTwitchResponsesTableName, "../fixtures/twitch-global-emotes-starting-response.json")
+	triggerLambda(t, ctx, lambdaClient, syncLambdaName)
+
+	var parsed []apiAddedEmote
+	require.EventuallyWithT(func(c *assert.CollectT) {
+		body, status, err := getAddedEmotes(ctx, apiInvokeUrl, apiKey, "global")
+		if !assert.NoError(c, err) {
+			return
+		}
+		if !assert.Equal(c, http.StatusOK, status) {
+			return
+		}
+
+		parsed = nil
+		if !assert.NoError(c, json.Unmarshal(body, &parsed)) {
+			return
+		}
+		assert.Len(c, parsed, 2)
+	}, 30*time.Second, 2*time.Second)
+
+	require.Len(parsed, 2)
+	require.Equal("1", parsed[0].Emote.Id)
+	require.Equal("1", parsed[1].Emote.Id)
+
+	firstAddedAt, err := time.Parse(time.RFC3339Nano, parsed[0].AddedAt)
+	require.NoError(err)
+	reAddedAt, err := time.Parse(time.RFC3339Nano, parsed[1].AddedAt)
+	require.NoError(err)
+	require.True(firstAddedAt.Before(reAddedAt))
+}
+
 func loadAwsConfig(t *testing.T) aws.Config {
 	t.Helper()
 	cfg, err := config.LoadDefaultConfig(ctx)
@@ -406,6 +463,10 @@ func getEmotes(ctx context.Context, baseUrl, apiKey, channelId string) ([]byte, 
 
 func getRemovedEmotes(ctx context.Context, baseUrl, apiKey, channelId string) ([]byte, int, error) {
 	return doGet(ctx, baseUrl+"/emotes/"+channelId+"/removed", apiKey)
+}
+
+func getAddedEmotes(ctx context.Context, baseUrl, apiKey, channelId string) ([]byte, int, error) {
+	return doGet(ctx, baseUrl+"/emotes/"+channelId+"/added", apiKey)
 }
 
 func doGet(ctx context.Context, url, apiKey string) ([]byte, int, error) {
