@@ -1,4 +1,3 @@
-import 'whatwg-fetch';
 import '@testing-library/jest-dom';
 import { server } from '~/__mocks__/msw-server';
 

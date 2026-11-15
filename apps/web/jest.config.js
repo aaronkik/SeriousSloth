@@ -8,7 +8,7 @@ const customJestConfig = {
   moduleNameMapper: {
     '^~/(.*)$': '<rootDir>/$1',
   },
-  testEnvironment: 'jest-environment-jsdom',
+  testEnvironment: 'jest-fixed-jsdom',
 };
 
 module.exports = createJestConfig(customJestConfig);
