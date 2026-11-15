@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "oxlint",
-    "test": "NODE_OPTIONS='--experimental-vm-modules --disable-warning=ExperimentalWarning' jest",
-    "test:ci": "NODE_OPTIONS='--experimental-vm-modules --disable-warning=ExperimentalWarning' jest --ci --colors"
+    "test": "vitest",
+    "test:ci": "vitest run"
   },
   "dependencies": {
     "@next/env": "16.4.6",
@@ -36,20 +36,19 @@
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
     "@testing-library/user-event": "14.6.10",
-    "@types/jest": "30.0.0",
     "@types/newrelic": "9.14.8",
     "@types/node": "26.6.6",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "jest": "30.5.2",
-    "jest-environment-jsdom": "30.5.2",
-    "jest-fixed-jsdom": "0.0.11",
+    "jsdom": "31.0.0",
     "msw": "3.0.5",
     "oxlint": "1.93.0",
     "oxlint-tsgolint": "7.0.2007",
     "postcss": "8.5.32",
     "tailwindcss": "4.3.5",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "vite": "8.3.8",
+    "vitest": "5.1.0"
   },
   "engines": {
     "node": "26.x"

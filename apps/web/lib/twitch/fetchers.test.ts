@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { validUsername } from '~/__mocks__/data/twitch/constants';
 import {
   fetchClientCredentials,
