@@ -30,6 +30,9 @@
     "preview": {
       "cache": false
     },
+    "preview:staging": {
+      "cache": false
+    },
     "destroy:local": {
       "cache": false
     },

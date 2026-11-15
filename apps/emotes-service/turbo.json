@@ -15,6 +15,15 @@
       ],
       "passThroughEnv": ["PULUMI_ACCESS_TOKEN"]
     },
+    "preview:staging": {
+      "env": [
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SECRET_ACCESS_KEY",
+        "AWS_SESSION_TOKEN",
+        "AWS_REGION"
+      ],
+      "passThroughEnv": ["PULUMI_ACCESS_TOKEN"]
+    },
     "deploy:staging": {
       "env": [
         "AWS_ACCESS_KEY_ID",
