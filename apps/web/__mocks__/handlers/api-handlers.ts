@@ -1,4 +1,4 @@
-import { rest } from 'msw';
+import { http, HttpResponse, type PathParams } from 'msw';
 import {
   usernameMinLength,
   usernameMaxLength,
@@ -8,15 +8,15 @@ import { fetchClientCredentials, fetchUsers } from '~/lib/twitch';
 import { UserSearchApiRequest, UserSearchApiResponse } from '~/types/api';
 
 const handlers = [
-  rest.post<UserSearchApiRequest, {}, UserSearchApiResponse>(
+  http.post<PathParams, UserSearchApiRequest, UserSearchApiResponse>(
     '/api/user-search',
-    async (req, res, ctx) => {
-      const { username } = await req.json<UserSearchApiRequest>();
+    async ({ request }) => {
+      const { username } = await request.json();
 
       if (!username) {
-        return res(
-          ctx.status(400),
-          ctx.json({ status: 400, message: 'No username passed' })
+        return HttpResponse.json(
+          { status: 400, message: 'No username passed' },
+          { status: 400 },
         );
       }
 
@@ -24,30 +24,30 @@ const handlers = [
         username.length < usernameMinLength ||
         username.length > usernameMaxLength
       ) {
-        return res(
-          ctx.status(400),
-          ctx.json({
+        return HttpResponse.json(
+          {
             status: 400,
             message: `Username must be between ${usernameMinLength} and ${usernameMaxLength}`,
-          })
+          },
+          { status: 400 },
         );
       }
 
       if (!usernameRegex.test(username)) {
-        return res(
-          ctx.status(400),
-          ctx.json({
+        return HttpResponse.json(
+          {
             status: 400,
             message: 'Username can only contain alphanumeric characters',
-          })
+          },
+          { status: 400 },
         );
       }
 
       const { access_token } = await fetchClientCredentials();
       const users = await fetchUsers(access_token, username);
 
-      return res(ctx.status(200), ctx.json(users));
-    }
+      return HttpResponse.json(users, { status: 200 });
+    },
   ),
 ];
 

@@ -1,7 +1,7 @@
 import './globals.css';
-import React, { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { Roboto } from 'next/font/google';
+import React, { Suspense } from 'react';
 import { Container, Footer, Header } from '~/components/shared';
 import { Toaster } from '~/components/ui/sonner';
 import { NewRelicBrowserTiming } from './newrelic-browser-timing';
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   description: 'A web app that interacts with the Twitch API',
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -30,7 +30,7 @@ export default async function RootLayout({
         <link rel='icon' href='/favicon.ico' sizes='any' />
         <link rel='icon' href='/icon.png' type='image/png' sizes='32x32' />
       </head>
-      <body className='bg-background text-foreground flex h-screen flex-col'>
+      <body className='flex h-screen flex-col bg-background text-foreground'>
         <Header />
         <main className='flex-1 py-8'>
           <Container>{children}</Container>

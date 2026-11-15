@@ -22,7 +22,7 @@ describe('buildEmoteUrl', () => {
     const emote = makeEmote();
 
     expect(buildEmoteUrl(emote)).toBe(
-      `${CDN_BASE}/${emote.id}/animated/dark/3.0`
+      `${CDN_BASE}/${emote.id}/animated/dark/3.0`,
     );
   });
 
@@ -30,7 +30,7 @@ describe('buildEmoteUrl', () => {
     const emote = makeEmote({ format: ['static'] });
 
     expect(buildEmoteUrl(emote)).toBe(
-      `${CDN_BASE}/${emote.id}/static/dark/3.0`
+      `${CDN_BASE}/${emote.id}/static/dark/3.0`,
     );
   });
 
@@ -38,7 +38,7 @@ describe('buildEmoteUrl', () => {
     const emote = makeEmote({ theme_mode: ['light'] });
 
     expect(buildEmoteUrl(emote)).toBe(
-      `${CDN_BASE}/${emote.id}/animated/light/3.0`
+      `${CDN_BASE}/${emote.id}/animated/light/3.0`,
     );
   });
 
@@ -46,7 +46,7 @@ describe('buildEmoteUrl', () => {
     const emote = makeEmote({ scale: ['1.0'] });
 
     expect(buildEmoteUrl(emote)).toBe(
-      `${CDN_BASE}/${emote.id}/animated/dark/1.0`
+      `${CDN_BASE}/${emote.id}/animated/dark/1.0`,
     );
   });
 
@@ -58,7 +58,7 @@ describe('buildEmoteUrl', () => {
     });
 
     expect(buildEmoteUrl(emote)).toBe(
-      `${CDN_BASE}/${emote.id}/static/light/2.0`
+      `${CDN_BASE}/${emote.id}/static/light/2.0`,
     );
   });
 
@@ -66,7 +66,7 @@ describe('buildEmoteUrl', () => {
     const emote = makeEmote({ scale: ['1.0', '2.0'] });
 
     expect(buildEmoteUrl(emote)).toBe(
-      `${CDN_BASE}/${emote.id}/animated/dark/2.0`
+      `${CDN_BASE}/${emote.id}/animated/dark/2.0`,
     );
   });
 
@@ -78,7 +78,7 @@ describe('buildEmoteUrl', () => {
     });
 
     expect(buildEmoteUrl(emote)).toBe(
-      `${CDN_BASE}/${emote.id}/static/light/1.0`
+      `${CDN_BASE}/${emote.id}/static/light/1.0`,
     );
   });
 
@@ -86,7 +86,7 @@ describe('buildEmoteUrl', () => {
     const emote = makeEmote({ id: 'abc123' });
 
     expect(buildEmoteUrl(emote)).toMatch(
-      /^https:\/\/static-cdn\.jtvnw\.net\/emoticons\/v2\/abc123\/(animated|static)\/(dark|light)\/(1\.0|2\.0|3\.0)$/
+      /^https:\/\/static-cdn\.jtvnw\.net\/emoticons\/v2\/abc123\/(animated|static)\/(dark|light)\/(1\.0|2\.0|3\.0)$/,
     );
   });
 });

@@ -39,7 +39,7 @@ export const fetchClientCredentials =
   };
 
 export const fetchGlobalEmotes = async (
-  accessToken: string
+  accessToken: string,
 ): Promise<GlobalEmotesSuccessResponse> => {
   const globalEmotesResponse = await fetch(globalEmotesEndpoint, {
     method: 'GET',
@@ -60,7 +60,7 @@ export const fetchGlobalEmotes = async (
 
 export const fetchUsers = async (
   accessToken: string,
-  username: string
+  username: string,
 ): Promise<GetUsers> => {
   const usernameSearchParams = new URLSearchParams({
     login: username,
@@ -74,7 +74,7 @@ export const fetchUsers = async (
         Authorization: `Bearer ${accessToken}`,
         'Client-Id': clientId,
       }),
-    }
+    },
   );
 
   const payload = (await usersResponse.json()) as GetUsersResponse;

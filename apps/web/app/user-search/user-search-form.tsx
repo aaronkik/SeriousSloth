@@ -53,7 +53,7 @@ const UserSearchFormUI = ({ defaultUsername }: FormProps) => {
         <SearchButton />
       </Field>
       {state.errors ? (
-        <div className='pt-2 px-2'>
+        <div className='px-2 pt-2'>
           {state.errors.map((error) => (
             <FieldDescription className='first:mt-2' key={error}>
               {error}

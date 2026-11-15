@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
+import { cacheLife } from 'next/cache';
 import ChannelList from '~/app/emotes/components/channel-list';
 import { Heading } from '~/components/shared';
-import { cacheLife } from 'next/cache';
 import { getChannels } from '~/lib/api/emotes-service';
 
 export const metadata: Metadata = {

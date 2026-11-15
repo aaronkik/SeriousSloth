@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import { rest } from 'msw';
+import { http, HttpResponse, type PathParams } from 'msw';
 import {
   globalEmotesEndpoint,
   oauth2TokenEndpoint,
@@ -12,76 +12,75 @@ import {
 } from '~/types/twitch';
 
 const handlers = [
-  rest.post<string, {}, OAuthClientCredentialsResponse>(
+  http.post<PathParams, string, OAuthClientCredentialsResponse>(
     oauth2TokenEndpoint,
-    async (req, res, ctx) => {
-      const reqBody = await req.text();
+    async ({ request }) => {
+      const reqBody = await request.text();
       const urlParams = new URLSearchParams(reqBody);
 
       if (!urlParams.get('client_id')) {
-        return res(
-          ctx.status(401),
-          ctx.json({ status: 401, message: 'Missing client_id' })
+        return HttpResponse.json(
+          { status: 401, message: 'Missing client_id' },
+          { status: 401 },
         );
       }
 
       if (!urlParams.get('client_secret')) {
-        return res(
-          ctx.status(401),
-          ctx.json({ status: 401, message: 'Missing client_secret' })
+        return HttpResponse.json(
+          { status: 401, message: 'Missing client_secret' },
+          { status: 401 },
         );
       }
 
       if (urlParams.get('grant_type') !== 'client_credentials') {
-        return res(
-          ctx.status(401),
-          ctx.json({
+        return HttpResponse.json(
+          {
             status: 401,
             message: 'Grant type not set to client_credentials',
-          })
+          },
+          { status: 401 },
         );
       }
 
-      return res(
-        ctx.status(200),
-        ctx.json({
-          access_token: faker.random.alphaNumeric(10),
-          expires_in: faker.datatype.number({ min: 1, max: 100000 }),
+      return HttpResponse.json(
+        {
+          access_token: faker.string.alphanumeric(10),
+          expires_in: faker.number.int({ min: 1, max: 100000 }),
           token_type: 'bearer',
-        })
+        },
+        { status: 200 },
       );
-    }
+    },
   ),
-  rest.get<undefined, {}, GlobalEmotesResponse>(
+  http.get<PathParams, never, GlobalEmotesResponse>(
     globalEmotesEndpoint,
-    async (req, res, ctx) => {
-      const bearerToken = req.headers.get('Authorization');
-      const clientId = req.headers.get('Client-Id');
+    ({ request }) => {
+      const bearerToken = request.headers.get('Authorization');
+      const clientId = request.headers.get('Client-Id');
 
       if (!bearerToken) {
-        return res(
-          ctx.status(401),
-          ctx.json({
+        return HttpResponse.json(
+          {
             status: 401,
             error: 'Missing access token',
             message: 'Missing access token',
-          })
+          },
+          { status: 401 },
         );
       }
       if (!clientId) {
-        return res(
-          ctx.status(401),
-          ctx.json({
+        return HttpResponse.json(
+          {
             status: 401,
             error: 'Missing client id',
             message: 'Missing client id',
-          })
+          },
+          { status: 401 },
         );
       }
 
-      return res(
-        ctx.status(200),
-        ctx.json({
+      return HttpResponse.json(
+        {
           data: [
             {
               id: '3',
@@ -131,53 +130,53 @@ const handlers = [
           ],
           template:
             'https://static-cdn.jtvnw.net/emoticons/v2/{{id}}/{{format}}/{{theme_mode}}/{{scale}}',
-        })
+        },
+        { status: 200 },
       );
-    }
+    },
   ),
-  rest.get<undefined, {}, GetUsersResponse>(
+  http.get<PathParams, never, GetUsersResponse>(
     usersEndpoint,
-    async (req, res, ctx) => {
-      const bearerToken = req.headers.get('Authorization');
-      const clientId = req.headers.get('Client-Id');
-      const loginNames = req.url.searchParams.getAll('login');
+    ({ request }) => {
+      const bearerToken = request.headers.get('Authorization');
+      const clientId = request.headers.get('Client-Id');
+      const loginNames = new URL(request.url).searchParams.getAll('login');
 
       if (!bearerToken) {
-        return res(
-          ctx.status(401),
-          ctx.json({
+        return HttpResponse.json(
+          {
             status: 401,
             error: 'Missing access token',
             message: 'Missing access token',
-          })
+          },
+          { status: 401 },
         );
       }
 
       if (!clientId) {
-        return res(
-          ctx.status(401),
-          ctx.json({
+        return HttpResponse.json(
+          {
             status: 401,
             error: 'Missing client id',
             message: 'Missing client id',
-          })
+          },
+          { status: 401 },
         );
       }
 
       if (loginNames.some((loginName) => loginName === '')) {
-        return res(
-          ctx.status(400),
-          ctx.json({
+        return HttpResponse.json(
+          {
             status: 400,
             error: 'Empty login name',
             message: 'Login name cannot be empty',
-          })
+          },
+          { status: 400 },
         );
       }
 
-      return res(
-        ctx.status(200),
-        ctx.json({
+      return HttpResponse.json(
+        {
           data: [
             {
               id: '12826',
@@ -231,9 +230,10 @@ const handlers = [
               created_at: '2017-10-01T09:36:00Z',
             },
           ],
-        })
+        },
+        { status: 200 },
       );
-    }
+    },
   ),
 ];
 

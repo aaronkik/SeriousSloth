@@ -14,10 +14,7 @@ const ChannelList = ({ channels }: Props) => (
   >
     {channels.map((channel) => (
       <li key={channel.id}>
-        <Link
-          href={`/emotes/${channelSlug(channel)}`}
-          className='group block'
-        >
+        <Link href={`/emotes/${channelSlug(channel)}`} className='group block'>
           <Card className='flex flex-col items-center gap-3 p-5 ring-1 ring-transparent group-hover:ring-primary/60'>
             {channel.type === 'twitch' ? (
               <Avatar className='size-20 sm:size-24'>
