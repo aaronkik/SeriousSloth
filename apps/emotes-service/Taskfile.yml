@@ -55,6 +55,16 @@ tasks:
     cmds:
       - pulumi preview
 
+  preview:staging:
+    desc: Preview IaC changes against staging
+    deps:
+      - build
+    env:
+      PULUMI_STACK: staging
+    cmds:
+      - task: create:staging
+      - pulumi preview
+
   deploy:
     desc: Deploys IaC
     deps:

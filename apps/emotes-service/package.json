@@ -10,6 +10,7 @@
     "lint": "task lint",
     "create": "task create",
     "preview": "task preview",
+    "preview:staging": "task preview:staging",
     "deploy": "task deploy",
     "deploy:staging": "task deploy:staging",
     "deploy:prod": "task deploy:prod",

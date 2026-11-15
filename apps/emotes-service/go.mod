@@ -15,7 +15,6 @@ require (
 	github.com/newrelic/go-agent/v3 v3.45.0
 	github.com/newrelic/go-agent/v3/integrations/nrlambda v1.2.7
 	github.com/pulumi/pulumi-aws/sdk/v7 v7.54.0
-	github.com/pulumi/pulumi-pulumiservice/sdk v1.7.0
 	github.com/pulumi/pulumi/sdk/v3 v3.276.0
 	github.com/stretchr/testify v1.12.1
 	golang.org/x/oauth2 v0.38.0

@@ -61,3 +61,26 @@ jobs:
           scope: user:aaronkik
       - name: Check affected tests
         run: turbo run test:ci --affected
+
+  preview-staging:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs:
+      - lint-build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Setup mise
+        uses: jdx/mise-action@v5.2.8
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Authenticate with Pulumi Cloud
+        uses: pulumi/auth-actions@v2.1.2
+        with:
+          organization: aaronkik
+          requested-token-type: urn:pulumi:token-type:access_token:personal
+          scope: user:aaronkik
+      - name: Preview affected staging infrastructure
+        run: turbo run preview:staging --affected
