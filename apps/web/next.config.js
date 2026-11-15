@@ -3,6 +3,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   cacheComponents: true,
+  partialPrefetching: true,
   poweredByHeader: false,
   serverExternalPackages: ['newrelic'],
   // The agent requires newrelic.js via a runtime path, which file tracing cannot see.
