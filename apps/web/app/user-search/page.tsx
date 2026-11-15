@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import UserSearchForm from '~/app/user-search/user-search-form';
 import UserSearchResult from '~/app/user-search/components/user-search-result';
+import UserSearchForm from '~/app/user-search/user-search-form';
 import { Card, Heading } from '~/components/shared';
 
 export const metadata: Metadata = {

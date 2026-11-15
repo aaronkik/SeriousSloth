@@ -19,7 +19,7 @@ describe('fetchUsers', () => {
       {
         message: expect.any(String),
         status: 400,
-      }
+      },
     );
   });
 

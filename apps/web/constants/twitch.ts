@@ -4,7 +4,7 @@ export const clientSecret = process.env.TWITCH_CLIENT_SECRET!;
 export const usernameMinLength = 3;
 export const usernameMaxLength = 25;
 export const usernameRegex = new RegExp(
-  `^\\w{${usernameMinLength},${usernameMaxLength}}$`
+  `^\\w{${usernameMinLength},${usernameMaxLength}}$`,
 );
 
 // Endpoints

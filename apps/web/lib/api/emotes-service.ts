@@ -1,10 +1,10 @@
-import { getEnvOrThrow } from '~/lib/helpers';
 import {
   GLOBAL_CHANNEL,
   type Channel,
   type TwitchChannel,
 } from '~/lib/api/channels';
 import { get } from '~/lib/fetch';
+import { getEnvOrThrow } from '~/lib/helpers';
 
 export type { Channel } from '~/lib/api/channels';
 

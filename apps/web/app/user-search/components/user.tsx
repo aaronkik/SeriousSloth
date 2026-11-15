@@ -1,7 +1,7 @@
+import UserCard from '~/app/user-search/components/user-card';
+import UserNotFound from '~/app/user-search/components/user-not-found';
 import { searchTwitchUser } from '~/app/user-search/queries';
 import { usernameSchema } from '~/app/user-search/schemas';
-import UserNotFound from '~/app/user-search/components/user-not-found';
-import UserCard from '~/app/user-search/components/user-card';
 
 interface Props {
   username?: string;

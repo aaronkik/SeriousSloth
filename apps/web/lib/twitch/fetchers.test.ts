@@ -33,13 +33,13 @@ describe('fetchGlobalEmotes', () => {
         url_4x: expect.any(String),
       });
       expect(format).toEqual(
-        expect.arrayContaining([expect.stringMatching(/^(static|animated)$/)])
+        expect.arrayContaining([expect.stringMatching(/^(static|animated)$/)]),
       );
       expect(scale).toEqual(
-        expect.arrayContaining([expect.stringMatching(/^(1\.0|2\.0|3\.0)$/)])
+        expect.arrayContaining([expect.stringMatching(/^(1\.0|2\.0|3\.0)$/)]),
       );
       expect(theme_mode).toEqual(
-        expect.arrayContaining([expect.stringMatching(/^(light|dark)$/)])
+        expect.arrayContaining([expect.stringMatching(/^(light|dark)$/)]),
       );
     });
   });

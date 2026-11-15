@@ -9,8 +9,8 @@ type Props = DetailedHTMLProps<
 const Heading = ({ className, variant, ...props }: Props) =>
   createElement(variant, {
     className: cn(
-      'font-heading text-3xl md:text-5xl tracking-wide font-bold text-foreground',
-      className
+      'font-heading text-3xl font-bold tracking-wide text-foreground md:text-5xl',
+      className,
     ),
     ...props,
   });

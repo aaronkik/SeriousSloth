@@ -17,7 +17,7 @@ export const EmoteGrid = ({ emotes }: { emotes: EmoteListEntry[] }) => (
               className='absolute inset-0 size-full object-contain'
             />
           </div>
-          <p className='tracking-wide break-all text-center'>{emote.name}</p>
+          <p className='text-center tracking-wide break-all'>{emote.name}</p>
         </Card>
       </li>
     ))}
@@ -27,9 +27,9 @@ export const EmoteGrid = ({ emotes }: { emotes: EmoteListEntry[] }) => (
 export const EmoteDateGroups = ({ emotes }: { emotes: EmotesByDate }) =>
   Object.entries(emotes).map(([date, dateEmotes]) => (
     <div key={date} className='flex flex-col'>
-      <div className='py-6 flex items-center gap-2'>
+      <div className='flex items-center gap-2 py-6'>
         <p className='text-lg font-semibold'>{formatDate(date, 'LL')}</p>
-        <hr className='w-48 h-1 bg-primary rounded-full' />
+        <hr className='h-1 w-48 rounded-full bg-primary' />
       </div>
       <EmoteGrid emotes={dateEmotes} />
     </div>
