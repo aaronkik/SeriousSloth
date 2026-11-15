@@ -25,15 +25,15 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - name: Setup mise
-        uses: jdx/mise-action@v4
+        uses: jdx/mise-action@v5.2.8
       - name: Install dependencies
         run: bun install --frozen-lockfile
       - name: Authenticate with Pulumi Cloud
-        uses: pulumi/auth-actions@v1
+        uses: pulumi/auth-actions@v2.1.2
         with:
           organization: aaronkik
           requested-token-type: urn:pulumi:token-type:access_token:personal
@@ -41,12 +41,10 @@ jobs:
       - name: Deploy staging
         run: turbo run deploy:staging --affected
         env:
-          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
           EMOTES_SERVICE_API_URL: ${{ secrets.EMOTES_SERVICE_API_URL }}
           EMOTES_SERVICE_API_KEY: ${{ secrets.EMOTES_SERVICE_API_KEY }}
       - name: Deploy prod
         run: turbo run deploy:prod --affected
         env:
-          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
           EMOTES_SERVICE_API_URL: ${{ secrets.EMOTES_SERVICE_API_URL }}
           EMOTES_SERVICE_API_KEY: ${{ secrets.EMOTES_SERVICE_API_KEY }}
