@@ -9,4 +9,4 @@ turbo = "2.11.11"
 
 [settings]
 lockfile = true
-lockfile_platforms = ["linux-x64", "macos-arm64"]
+lockfile_platforms = ["linux-arm64", "linux-x64", "macos-arm64"]

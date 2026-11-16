@@ -17,13 +17,16 @@ permissions:
 
 env:
   DO_NOT_TRACK: 1
-  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-  TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+  # CodeBuild runners persist /root/.cache to S3 between jobs.
+  TURBO_CACHE_DIR: /root/.cache/turbo
+  TURBO_CACHE_MAX_SIZE: 500MB
   CI_STACK_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.stack_name || format('pr-{0}', github.event.pull_request.number) }}
 
 jobs:
   destroy:
-    runs-on: ubuntu-latest
+    runs-on:
+      - codebuild-SeriousSloth-${{ github.run_id }}-${{ github.run_attempt }}
+      - buildspec-override:true
     timeout-minutes: 10
     steps:
       - name: Checkout
@@ -32,6 +35,8 @@ jobs:
           fetch-depth: 0
       - name: Setup mise
         uses: jdx/mise-action@v5.2.8
+        with:
+          cache: false
       - name: Install dependencies
         run: bun install --frozen-lockfile
       - name: Authenticate with Pulumi Cloud
