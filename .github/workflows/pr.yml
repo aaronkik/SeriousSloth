@@ -13,9 +13,6 @@ permissions:
 
 env:
   DO_NOT_TRACK: 1
-  # CodeBuild runners persist /root/.cache to S3 between jobs.
-  TURBO_CACHE_DIR: /root/.cache/turbo
-  TURBO_CACHE_MAX_SIZE: 500MB
   TURBO_SCM_BASE: origin/${{ github.base_ref }}
   CI_STACK_NAME: pr-${{ github.event.pull_request.number }}
 
