@@ -43,9 +43,9 @@
     "jsdom": "31.0.0",
     "msw": "3.0.5",
     "oxlint": "1.93.0",
-    "oxlint-tsgolint": "7.0.2007",
     "postcss": "8.5.32",
     "tailwindcss": "4.3.5",
+    "tsrs": "0.25.0-ts7.1.0-beta",
     "typescript": "7.0.2",
     "vite": "8.3.8",
     "vitest": "5.1.0"
