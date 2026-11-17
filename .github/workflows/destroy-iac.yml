@@ -17,9 +17,6 @@ permissions:
 
 env:
   DO_NOT_TRACK: 1
-  # CodeBuild runners persist /root/.cache to S3 between jobs.
-  TURBO_CACHE_DIR: /root/.cache/turbo
-  TURBO_CACHE_MAX_SIZE: 500MB
   CI_STACK_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.stack_name || format('pr-{0}', github.event.pull_request.number) }}
 
 jobs:
